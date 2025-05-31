@@ -4,8 +4,7 @@
         "test_*": true
     },
     "search.exclude": {
-        "archives/": true,
-        "test_*": true
+
     },
     "spellright.language": [
         "en"
