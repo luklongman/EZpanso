@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "ezpanso"
+version = "0.1.0"
+description = "A modern GUI for managing text expansion snippets"
+authors = ["Longman <info@longman.hk>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.14"
+PyQt6 = "^6.5.0"
+PyYAML = "^6.0"
+
+[tool.poetry.group.dev.dependencies]
+pyinstaller = "^6.13.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+espanso-manager = "main:main"
