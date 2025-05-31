@@ -8,7 +8,7 @@ import sys
 import os
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QPushButton, QLabel, QTextEdit
 from PyQt6.QtCore import Qt, QTimer
-from main_improved import EZpanso, NewFileDialog
+from main import EZpanso, NewFileDialog
 
 class ComprehensiveTest(QMainWindow):
     """Comprehensive test of all NSException fixes."""

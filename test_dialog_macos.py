@@ -12,7 +12,7 @@ from PyQt6.QtCore import Qt
 import logging
 
 # Import the dialog from our improved main
-from main_improved import NewCategoryDialog, EditSnippetDialog
+from main import NewCategoryDialog, EditSnippetDialog
 from data_model import Snippet
 
 # Set up logging

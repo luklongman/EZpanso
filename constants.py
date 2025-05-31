@@ -44,6 +44,7 @@ MSG_FAILED_CREATE_FILE = "Failed to create new file."
 MSG_REMOVING_FILE = "Removing file '{}'..."
 MSG_FILE_DELETED = "File '{}' deleted."
 MSG_FAILED_DELETE_FILE = "Failed to delete file '{}'."
+MSG_LOAD_ERROR = "Error during data loading"
 
 # Confirmations
 CONFIRM_UNSAVED_REFRESH = "Unsaved changes exist. Refresh and lose them?"

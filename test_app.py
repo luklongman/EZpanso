@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 try:
     from PyQt6.QtWidgets import QApplication
-    from main_improved import EZpanso
+    from main import EZpanso
     import logging
     
     # Set up logging to see any issues

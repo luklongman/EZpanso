@@ -15,7 +15,12 @@ import logging
 import webbrowser
 import copy
 from typing import Dict, List, Any, Optional
-from PyQt6.QtCore import Qt, pyqtSlot, QThreadPool, QRunnable # Added QRunnable for type hint
+from PyQt6.QtCore import (
+    Qt,
+    pyqtSlot,
+    QThreadPool,
+    QRunnable,
+)  # Added QRunnable for type hint
 from PyQt6.QtGui import QKeySequence, QAction, QIcon
 from PyQt6.QtWidgets import (
     QApplication,
@@ -34,12 +39,13 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
     QTextEdit,
     QDialogButtonBox,
-    QHeaderView
+    QHeaderView,
+    QMenuBar,
 )
 
 # Assuming these modules are in the same directory or correctly in PYTHONPATH
 from ui_utils import UIHelpers
-from qt_data_loader import DataLoader, DataSaver 
+from qt_data_loader import DataLoader, DataSaver
 from utils import get_default_espanso_config_path
 from data_model import Snippet
 import constants as C
@@ -47,31 +53,37 @@ import constants as C
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class ValidationError(Exception):
     pass
 
+
 class SnippetValidator:
     @staticmethod
-    def validate_trigger(trigger: str, existing_snippets: List[Snippet], 
-                        exclude_trigger: Optional[str] = None) -> None:
+    def validate_trigger(
+        trigger: str,
+        existing_snippets: List[Snippet],
+        exclude_trigger: Optional[str] = None,
+    ) -> None:
         if not trigger.strip():
             raise ValidationError(C.ERROR_TRIGGER_EMPTY)
         for snippet in existing_snippets:
             if snippet.trigger == trigger and snippet.trigger != exclude_trigger:
                 raise ValidationError(C.ERROR_TRIGGER_EXISTS.format(trigger=trigger))
 
+
 class EditSnippetDialog(QDialog):
     def __init__(self, parent: QWidget, title: str, snippet: Snippet):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.setModal(True)
-        self.snippet = snippet # Store the original snippet
+        self.snippet = snippet  # Store the original snippet
         self.result: Optional[Dict[str, str]] = None
         self.setWindowFlags(
-            Qt.WindowType.Dialog |
-            Qt.WindowType.WindowTitleHint |
-            Qt.WindowType.WindowCloseButtonHint |
-            Qt.WindowType.WindowSystemMenuHint
+            Qt.WindowType.Dialog
+            | Qt.WindowType.WindowTitleHint
+            | Qt.WindowType.WindowCloseButtonHint
+            | Qt.WindowType.WindowSystemMenuHint
         )
         if parent:
             self.setParent(parent)
@@ -114,6 +126,7 @@ class EditSnippetDialog(QDialog):
         self.result = {C.COL_TRIGGER: trigger, C.COL_REPLACE: replace}
         super().accept()
 
+
 class NewFileDialog(QDialog):
     def __init__(self, parent: QWidget, espanso_match_dir: str):
         super().__init__(parent)
@@ -122,10 +135,10 @@ class NewFileDialog(QDialog):
         self.espanso_match_dir = espanso_match_dir
         self.result: Optional[Dict[str, str]] = None
         self.setWindowFlags(
-            Qt.WindowType.Dialog |
-            Qt.WindowType.WindowTitleHint |
-            Qt.WindowType.WindowCloseButtonHint |
-            Qt.WindowType.WindowSystemMenuHint
+            Qt.WindowType.Dialog
+            | Qt.WindowType.WindowTitleHint
+            | Qt.WindowType.WindowCloseButtonHint
+            | Qt.WindowType.WindowSystemMenuHint
         )
         if parent:
             self.setParent(parent)
@@ -172,12 +185,17 @@ class NewFileDialog(QDialog):
         filename = f"{name}.yml"
         original_file_path = os.path.join(self.espanso_match_dir, filename)
         if os.path.exists(original_file_path):
-            QMessageBox.critical(self, "Error", C.ERROR_FILE_FILE_EXISTS.format(filename=filename))
+            QMessageBox.critical(
+                self, "Error", C.ERROR_FILE_FILE_EXISTS.format(filename=filename)
+            )
             return
         self.result = {"file_path": original_file_path, "display_name": filename}
         super().accept()
 
+
 class EZpanso(QMainWindow):
+    thread_pool: QThreadPool # Add class-level type hint
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle(C.TITLE_APP)
@@ -186,12 +204,13 @@ class EZpanso(QMainWindow):
         self._setup_ui_elements()
         self._setup_menu_and_shortcuts()
         self._load_initial_config()
-        
+
     def _init_state(self):
         self.espanso_match_dir = ""
         self.file_dropdown_map: Dict[str, str] = {}
         self.active_file_path: Optional[str] = None
-        self.thread_pool = QThreadPool.globalInstance()
+        global_pool = QThreadPool.globalInstance()
+        self.thread_pool = global_pool if global_pool is not None else QThreadPool()
         self.is_modified = False
         self.original_data: Dict[str, List[Snippet]] = {}
         self.current_data: Dict[str, List[Snippet]] = {}
@@ -218,10 +237,13 @@ class EZpanso(QMainWindow):
         self._setup_status_bar_ui()
 
     def _setup_menu_and_shortcuts(self):
-        menubar = self.menuBar()
+        menubar = QMenuBar() # Remove noqa: F821
+        self.setMenuBar(menubar)
         file_menu = menubar.addMenu("&File")
         # Use C.MENU_FILE_NEW_FILE if it exists and is preferred for the label
-        new_file_action = QAction(C.DROPDOWN_CREATE_NEW_FILE.split(" (")[0], self) # Label from constant
+        new_file_action = QAction(
+            C.DROPDOWN_CREATE_NEW_FILE.split(" (")[0], self
+        )  # Label from constant
         new_file_action.triggered.connect(self._new_file)
         file_menu.addAction(new_file_action)
 
@@ -247,19 +269,21 @@ class EZpanso(QMainWindow):
         file_selector_layout = QHBoxLayout()
         self.file_selector = QComboBox()
         self.file_selector.setMinimumWidth(200)
-        self.file_selector.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.file_selector.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
         self.file_selector.currentIndexChanged.connect(self._on_file_selected)
         file_selector_layout.addWidget(self.file_selector)
 
         # Using text directly for buttons, or ensure constants like C.BTN_NEW_FILE_TEXT exist
-        new_file_btn = QPushButton(C.DROPDOWN_CREATE_NEW_FILE.split(" (")[0]) 
+        new_file_btn = QPushButton(C.DROPDOWN_CREATE_NEW_FILE.split(" (")[0])
         new_file_btn.clicked.connect(self._new_file)
         file_selector_layout.addWidget(new_file_btn)
 
         delete_file_btn = QPushButton(C.BTN_DELETE_FILE.split(" (")[0])
         delete_file_btn.clicked.connect(self._delete_category)
         file_selector_layout.addWidget(delete_file_btn)
-        
+
         refresh_btn = QPushButton("Refresh")
         refresh_btn.setShortcut(QKeySequence(C.SHORTCUT_REFRESH))
         refresh_btn.clicked.connect(self._refresh_data)
@@ -275,10 +299,14 @@ class EZpanso(QMainWindow):
         if header:
             header.setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
             header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-            header.setStretchLastSection(False) # Ensure last section doesn't always stretch if column 1 is not last
+            header.setStretchLastSection(
+                False
+            )  # Ensure last section doesn't always stretch if column 1 is not last
             self.snippet_table.setColumnWidth(0, 250)
 
-        self.snippet_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.snippet_table.setSelectionBehavior(
+            QTableWidget.SelectionBehavior.SelectRows
+        )
         self.snippet_table.itemChanged.connect(self._on_item_edited)
         self.snippet_table.doubleClicked.connect(self._edit_selected_on_double_click)
         layout.addWidget(self.snippet_table)
@@ -313,11 +341,13 @@ class EZpanso(QMainWindow):
             # For now, we assume self.statusBar() works.
 
     def _update_status(self, message: str, timeout: int = 0):
-        if self.status_bar: # Check if status_bar exists and is a QStatusBar
-            if hasattr(self.status_bar, 'showMessage'):
+        if self.status_bar:  # Check if status_bar exists and is a QStatusBar
+            if hasattr(self.status_bar, "showMessage"):
                 self.status_bar.showMessage(message, timeout)
             else:
-                logger.warning("Attempted to use showMessage on a non-QStatusBar object.")
+                logger.warning(
+                    "Attempted to use showMessage on a non-QStatusBar object."
+                )
         logger.info(f"Status: {message}")
 
     @pyqtSlot()
@@ -331,17 +361,21 @@ class EZpanso(QMainWindow):
         dialog = None
         try:
             new_snippet_for_dialog = Snippet("", "", self.active_file_path)
-            dialog_title = C.TITLE_EDIT_SNIPPET.format("New Snippet") # Use format for title
+            dialog_title = C.TITLE_EDIT_SNIPPET.format(
+                "New Snippet"
+            )  # Use format for title
             dialog = EditSnippetDialog(self, dialog_title, new_snippet_for_dialog)
             if dialog.exec() != QDialog.DialogCode.Accepted or not dialog.result:
                 return
             result_data = dialog.result
             active_snippets = self.current_data.get(self.active_file_path, [])
-            SnippetValidator.validate_trigger(result_data[C.COL_TRIGGER], active_snippets)
+            SnippetValidator.validate_trigger(
+                result_data[C.COL_TRIGGER], active_snippets
+            )
             final_new_snippet = Snippet(
                 trigger=result_data[C.COL_TRIGGER],
                 replace_text=result_data[C.COL_REPLACE],
-                file_path=self.active_file_path
+                file_path=self.active_file_path,
             )
             self._add_snippet_to_data(final_new_snippet)
             self._add_snippet_to_table_display(final_new_snippet)
@@ -354,7 +388,8 @@ class EZpanso(QMainWindow):
             logger.error(f"Error creating new snippet: {e}", exc_info=True)
             QMessageBox.critical(self, "Error", f"An unexpected error occurred: {e}")
         finally:
-            if dialog: dialog.deleteLater()
+            if dialog:
+                dialog.deleteLater()
 
     def _add_snippet_to_data(self, snippet: Snippet):
         if not snippet.file_path:
@@ -369,9 +404,11 @@ class EZpanso(QMainWindow):
         # If the last row is the empty "new entry" row, insert before it
         if row > 0:
             last_row_trigger_item = self.snippet_table.item(row - 1, 0)
-            is_trigger_empty = not last_row_trigger_item or not last_row_trigger_item.text().strip()
-            if is_trigger_empty: 
-                row -=1 
+            is_trigger_empty = (
+                not last_row_trigger_item or not last_row_trigger_item.text().strip()
+            )
+            if is_trigger_empty:
+                row -= 1
         self.snippet_table.insertRow(row)
         trigger_item = QTableWidgetItem(snippet.trigger)
         replace_preview = UIHelpers.create_preview_text(snippet.replace_text)
@@ -386,16 +423,28 @@ class EZpanso(QMainWindow):
         active_snippets = self.current_data[self.active_file_path]
         row, col, new_text = item.row(), item.column(), item.text()
 
-        if row >= len(active_snippets): # Editing placeholder row
+        if row >= len(active_snippets):  # Editing placeholder row
             if col == 0 and new_text.strip():
                 replace_item = self.snippet_table.item(row, 1)
-                replace_text = replace_item.text() if replace_item and replace_item.text().strip() else ""
+                replace_text = (
+                    replace_item.text()
+                    if replace_item and replace_item.text().strip()
+                    else ""
+                )
                 try:
                     SnippetValidator.validate_trigger(new_text, active_snippets)
-                    new_snippet_obj = Snippet(new_text, replace_text, self.active_file_path)
+                    new_snippet_obj = Snippet(
+                        new_text, replace_text, self.active_file_path
+                    )
                     active_snippets.append(new_snippet_obj)
                     if not replace_item or not replace_item.text().strip():
-                         self.snippet_table.setItem(row, 1, QTableWidgetItem(UIHelpers.create_preview_text(replace_text)))
+                        self.snippet_table.setItem(
+                            row,
+                            1,
+                            QTableWidgetItem(
+                                UIHelpers.create_preview_text(replace_text)
+                            ),
+                        )
                     self.is_modified = True
                     self._update_window_title()
                     self._ensure_empty_bottom_row()
@@ -408,7 +457,9 @@ class EZpanso(QMainWindow):
                     trigger_text = trigger_item.text().strip()
                     try:
                         SnippetValidator.validate_trigger(trigger_text, active_snippets)
-                        new_snippet_obj = Snippet(trigger_text, new_text, self.active_file_path)
+                        new_snippet_obj = Snippet(
+                            trigger_text, new_text, self.active_file_path
+                        )
                         active_snippets.append(new_snippet_obj)
                         item.setText(UIHelpers.create_preview_text(new_text))
                         self.is_modified = True
@@ -416,15 +467,18 @@ class EZpanso(QMainWindow):
                         self._ensure_empty_bottom_row()
                     except ValidationError as e:
                         QMessageBox.warning(self, "Validation Error", str(e))
-                        if trigger_item: trigger_item.setText("")
+                        if trigger_item:
+                            trigger_item.setText("")
             return
 
-        if row < len(active_snippets): # Editing existing snippet
+        if row < len(active_snippets):  # Editing existing snippet
             snippet_to_edit = active_snippets[row]
             original_trigger = snippet_to_edit.trigger
             if col == 0:
                 try:
-                    SnippetValidator.validate_trigger(new_text, active_snippets, exclude_trigger=original_trigger)
+                    SnippetValidator.validate_trigger(
+                        new_text, active_snippets, exclude_trigger=original_trigger
+                    )
                     snippet_to_edit.trigger = new_text
                 except ValidationError as e:
                     QMessageBox.warning(self, "Validation Error", str(e))
@@ -438,17 +492,24 @@ class EZpanso(QMainWindow):
 
     def _ensure_empty_bottom_row(self):
         if not self.active_file_path:
-            if self.snippet_table.rowCount() > 0: self.snippet_table.setRowCount(0)
+            if self.snippet_table.rowCount() > 0:
+                self.snippet_table.setRowCount(0)
             return
         current_rows = self.snippet_table.rowCount()
         has_empty_row = False
         if current_rows > 0:
             last_row_trigger_item = self.snippet_table.item(current_rows - 1, 0)
             last_row_replace_item = self.snippet_table.item(current_rows - 1, 1)
-            is_trigger_empty = not last_row_trigger_item or not last_row_trigger_item.text().strip()
-            is_replace_empty = not last_row_replace_item or not last_row_replace_item.text().strip()
-            if is_trigger_empty and is_replace_empty: has_empty_row = True
-        if not has_empty_row: self.snippet_table.insertRow(current_rows)
+            is_trigger_empty = (
+                not last_row_trigger_item or not last_row_trigger_item.text().strip()
+            )
+            is_replace_empty = (
+                not last_row_replace_item or not last_row_replace_item.text().strip()
+            )
+            if is_trigger_empty and is_replace_empty:
+                has_empty_row = True
+        if not has_empty_row:
+            self.snippet_table.insertRow(current_rows)
 
     @pyqtSlot()
     def _edit_selected_on_double_click(self):
@@ -465,45 +526,84 @@ class EZpanso(QMainWindow):
         row_to_edit = selected_items[0].row()
         active_snippets = self.current_data[self.active_file_path]
         if row_to_edit >= len(active_snippets):
-            QMessageBox.warning(self, "Info", "Cannot edit the new entry row with this action. Type directly.")
+            QMessageBox.warning(
+                self,
+                "Info",
+                "Cannot edit the new entry row with this action. Type directly.",
+            )
             return
         snippet_to_edit = active_snippets[row_to_edit]
-        dialog_title = C.TITLE_EDIT_SNIPPET.format(os.path.basename(snippet_to_edit.file_path) + " - " + snippet_to_edit.trigger[:20])
+        dialog_title = C.TITLE_EDIT_SNIPPET.format(
+            os.path.basename(snippet_to_edit.file_path)
+            + " - "
+            + snippet_to_edit.trigger[:20]
+        )
         dialog = EditSnippetDialog(self, dialog_title, snippet_to_edit)
         if dialog.exec() == QDialog.DialogCode.Accepted and dialog.result:
-            new_trigger, new_replace = dialog.result[C.COL_TRIGGER], dialog.result[C.COL_REPLACE]
+            new_trigger, new_replace = (
+                dialog.result[C.COL_TRIGGER],
+                dialog.result[C.COL_REPLACE],
+            )
             try:
-                SnippetValidator.validate_trigger(new_trigger, active_snippets, exclude_trigger=snippet_to_edit.trigger)
+                SnippetValidator.validate_trigger(
+                    new_trigger,
+                    active_snippets,
+                    exclude_trigger=snippet_to_edit.trigger,
+                )
                 snippet_to_edit.trigger = new_trigger
                 snippet_to_edit.replace_text = new_replace
                 self.is_modified = True
                 self._update_window_title()
                 # Ensure table items exist before setting text
                 trigger_table_item = self.snippet_table.item(row_to_edit, 0)
-                if trigger_table_item: trigger_table_item.setText(new_trigger)
-                else: self.snippet_table.setItem(row_to_edit, 0, QTableWidgetItem(new_trigger))
-                
+                if trigger_table_item:
+                    trigger_table_item.setText(new_trigger)
+                else:
+                    self.snippet_table.setItem(
+                        row_to_edit, 0, QTableWidgetItem(new_trigger)
+                    )
+
                 replace_table_item = self.snippet_table.item(row_to_edit, 1)
-                if replace_table_item: replace_table_item.setText(UIHelpers.create_preview_text(new_replace))
-                else: self.snippet_table.setItem(row_to_edit, 1, QTableWidgetItem(UIHelpers.create_preview_text(new_replace)))
+                if replace_table_item:
+                    replace_table_item.setText(
+                        UIHelpers.create_preview_text(new_replace)
+                    )
+                else:
+                    self.snippet_table.setItem(
+                        row_to_edit,
+                        1,
+                        QTableWidgetItem(UIHelpers.create_preview_text(new_replace)),
+                    )
 
             except ValidationError as e:
                 QMessageBox.warning(self, "Validation Error", str(e))
-        if dialog: dialog.deleteLater()
+        if dialog:
+            dialog.deleteLater()
 
     def _remove_selected_snippets(self):
         if not self.active_file_path or self.active_file_path not in self.current_data:
             QMessageBox.warning(self, "Error", "No file or snippets to delete from.")
             return
-        selected_rows = sorted(list(set(item.row() for item in self.snippet_table.selectedItems())), reverse=True)
+        selected_rows = sorted(
+            list(set(item.row() for item in self.snippet_table.selectedItems())),
+            reverse=True,
+        )
         if not selected_rows:
             QMessageBox.information(self, "Info", C.ERROR_NO_SNIPPET_SELECTED_DELETE)
             return
-        valid_rows_to_delete = [r for r in selected_rows if r < len(self.current_data[self.active_file_path])]
+        valid_rows_to_delete = [
+            r
+            for r in selected_rows
+            if r < len(self.current_data[self.active_file_path])
+        ]
         if not valid_rows_to_delete:
-            QMessageBox.information(self, "Info", "No actual snippets selected for deletion.")
+            QMessageBox.information(
+                self, "Info", "No actual snippets selected for deletion."
+            )
             return
-        reply = UIHelpers.create_confirmation_dialog(self, C.MSG_CONFIRM_DELETE_SNIPPET_TITLE, C.MSG_CONFIRM_DELETE_SNIPPET_TEXT)
+        reply = UIHelpers.create_confirmation_dialog(
+            self, C.MSG_CONFIRM_DELETE_SNIPPET_TITLE, C.MSG_CONFIRM_DELETE_SNIPPET_TEXT
+        )
         if reply == QMessageBox.StandardButton.Yes:
             active_snippets_list = self.current_data[self.active_file_path]
             for row in valid_rows_to_delete:
@@ -512,69 +612,93 @@ class EZpanso(QMainWindow):
             self.is_modified = True
             self._update_window_title()
             self._ensure_empty_bottom_row()
-            
+
     def _save_all_changes(self):
         if not self.is_modified:
             self._update_status("No changes to save.", 3000)
             return
         modified_files_details = []
-        deleted_original_paths = set(self.original_data.keys()) - set(self.current_data.keys())
+        deleted_original_paths = set(self.original_data.keys()) - set(
+            self.current_data.keys()
+        )
         if not self.espanso_match_dir or not os.path.isdir(self.espanso_match_dir):
             UIHelpers.show_error_message(self, "Espanso match directory not set.")
             return
         try:
             espanso_config_parent_dir = os.path.dirname(self.espanso_match_dir)
             if not espanso_config_parent_dir:
-                UIHelpers.show_error_message(self, "Cannot determine parent for temp save.")
+                UIHelpers.show_error_message(
+                    self, "Cannot determine parent for temp save."
+                )
                 return
             temp_ez_dir = os.path.join(espanso_config_parent_dir, C.TEMP_EZ_FOLDER_NAME)
         except Exception as e:
             logger.error(f"Error determining temp_ez_dir: {e}", exc_info=True)
-            UIHelpers.show_error_message(self, f"Error setting up temp save location: {e}")
+            UIHelpers.show_error_message(
+                self, f"Error setting up temp save location: {e}"
+            )
             return
 
         for original_file_path, current_snippets_list in self.current_data.items():
             original_snippets_list = self.original_data.get(original_file_path)
             is_new_file = original_file_path not in self.original_data
-            if is_new_file or self._are_snippet_lists_different(current_snippets_list, original_snippets_list if original_snippets_list else []):
+            if is_new_file or self._are_snippet_lists_different(
+                current_snippets_list,
+                original_snippets_list if original_snippets_list else [],
+            ):
                 original_filename = os.path.basename(original_file_path)
                 temp_save_path = os.path.join(temp_ez_dir, original_filename)
-                modified_files_details.append({"path": temp_save_path, "snippets": current_snippets_list})
-        
+                modified_files_details.append(
+                    {"path": temp_save_path, "snippets": current_snippets_list}
+                )
+
         total_affected_files = len(modified_files_details) + len(deleted_original_paths)
         if total_affected_files == 0:
             self._update_status("No effective changes to save.", 3000)
-            self.is_modified = False 
+            self.is_modified = False
             self._update_window_title()
             return
 
         reply = UIHelpers.create_confirmation_dialog(
-            self, "Save Changes?",
-            f"You have {total_affected_files} file(s) with changes. Save to '{C.TEMP_EZ_FOLDER_NAME}' backup?"
+            self,
+            "Save Changes?",
+            f"You have {total_affected_files} file(s) with changes. Save to '{C.TEMP_EZ_FOLDER_NAME}' backup?",
         )
         if reply == QMessageBox.StandardButton.Yes:
-            self._execute_save_to_temp_ez(temp_ez_dir, modified_files_details, list(deleted_original_paths))
+            self._execute_save_to_temp_ez(
+                temp_ez_dir, modified_files_details, list(deleted_original_paths)
+            )
         else:
             self._update_status("Save cancelled.", 3000)
 
-    def _are_snippet_lists_different(self, list1: List[Snippet], list2: List[Snippet]) -> bool:
-        if len(list1) != len(list2): return True
+    def _are_snippet_lists_different(
+        self, list1: List[Snippet], list2: List[Snippet]
+    ) -> bool:
+        if len(list1) != len(list2):
+            return True
         for s1, s2 in zip(list1, list2):
-            if (s1.trigger != s2.trigger or 
-                s1.replace_text != s2.replace_text or 
-                s1.original_yaml_entry != s2.original_yaml_entry):
+            if (
+                s1.trigger != s2.trigger
+                or s1.replace_text != s2.replace_text
+                or s1.original_yaml_entry != s2.original_yaml_entry
+            ):
                 return True
         return False
 
-    def _execute_save_to_temp_ez(self, temp_ez_dir: str, 
-                                files_to_save_pkg: List[Dict[str, Any]], 
-                                deleted_original_paths: List[str]):
+    def _execute_save_to_temp_ez(
+        self,
+        temp_ez_dir: str,
+        files_to_save_pkg: List[Dict[str, Any]],
+        deleted_original_paths: List[str],
+    ):
         try:
             if not os.path.exists(temp_ez_dir):
                 os.makedirs(temp_ez_dir, exist_ok=True)
                 logger.info(f"Created temp directory: {temp_ez_dir}")
         except Exception as e:
-            logger.error(f"Error creating temp directory {temp_ez_dir}: {e}", exc_info=True)
+            logger.error(
+                f"Error creating temp directory {temp_ez_dir}: {e}", exc_info=True
+            )
             UIHelpers.show_error_message(self, f"Error creating temp directory: {e}")
             return
 
@@ -584,35 +708,50 @@ class EZpanso(QMainWindow):
             if os.path.exists(temp_file_to_delete_path):
                 try:
                     os.remove(temp_file_to_delete_path)
-                    logger.info(f"Deleted {temp_file_to_delete_path} from {C.TEMP_EZ_FOLDER_NAME}.")
+                    logger.info(
+                        f"Deleted {temp_file_to_delete_path} from {C.TEMP_EZ_FOLDER_NAME}."
+                    )
                 except Exception as e:
-                    logger.error(f"Error deleting {temp_file_to_delete_path} from {C.TEMP_EZ_FOLDER_NAME}: {e}", exc_info=True)
+                    logger.error(
+                        f"Error deleting {temp_file_to_delete_path} from {C.TEMP_EZ_FOLDER_NAME}: {e}",
+                        exc_info=True,
+                    )
 
         if not files_to_save_pkg and not deleted_original_paths:
             self._update_status("No changes to save to temp directory.", 3000)
-            self.is_modified = False 
+            self.is_modified = False
             self._update_window_title()
             return
 
         if files_to_save_pkg:
-            self._update_status(f"Saving {len(files_to_save_pkg)} file(s) to {C.TEMP_EZ_FOLDER_NAME}...", 0)
+            self._update_status(
+                f"Saving {len(files_to_save_pkg)} file(s) to {C.TEMP_EZ_FOLDER_NAME}...",
+                0,
+            )
             self.data_saver_thread = DataSaver(files_to_save_pkg)
-            self.data_saver_thread.signals.save_complete.connect(self._handle_save_complete)
+            self.data_saver_thread.signals.save_complete.connect(
+                self._handle_save_complete
+            )
             self.data_saver_thread.signals.save_error.connect(self._handle_save_error)
             self.thread_pool.start(self.data_saver_thread)
         elif deleted_original_paths and not files_to_save_pkg:
             self._handle_save_complete([])
-            
+
     def _handle_save_complete(self, saved_temp_files_paths: List[str]):
         num_saved = len(saved_temp_files_paths)
-        self._update_status(f"Successfully saved changes to '{C.TEMP_EZ_FOLDER_NAME}'. ({num_saved} file(s) written/updated).", 5000)
+        self._update_status(
+            f"Successfully saved changes to '{C.TEMP_EZ_FOLDER_NAME}'. ({num_saved} file(s) written/updated).",
+            5000,
+        )
         self.is_modified = False
         self._update_window_title()
         self.original_data = copy.deepcopy(self.current_data)
         logger.info(f"Save complete. Temp files affected: {saved_temp_files_paths}")
 
     def _handle_save_error(self, error_message: str):
-        UIHelpers.show_error_message(self, f"Error saving to '{C.TEMP_EZ_FOLDER_NAME}': {error_message}")
+        UIHelpers.show_error_message(
+            self, f"Error saving to '{C.TEMP_EZ_FOLDER_NAME}': {error_message}"
+        )
         self._update_status(f"Error saving changes: {error_message}", 0)
 
     def _update_window_title(self, modified: Optional[bool] = None):
@@ -622,23 +761,34 @@ class EZpanso(QMainWindow):
 
     def closeEvent(self, event):
         if self.is_modified:
-            reply = QMessageBox.question(self, 
-                                         C.MSG_UNSAVED_CHANGES_TITLE, 
-                                         C.MSG_UNSAVED_CHANGES_TEXT, 
-                                         QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel)
+            reply = QMessageBox.question(
+                self,
+                C.MSG_UNSAVED_CHANGES_TITLE,
+                C.MSG_UNSAVED_CHANGES_TEXT,
+                QMessageBox.StandardButton.Save
+                | QMessageBox.StandardButton.Discard
+                | QMessageBox.StandardButton.Cancel,
+            )
             if reply == QMessageBox.StandardButton.Save:
                 self._save_all_changes()
-                if self.is_modified: event.ignore(); return
+                if self.is_modified:
+                    event.ignore()
+                    return
             elif reply == QMessageBox.StandardButton.Cancel:
-                event.ignore(); return
+                event.ignore()
+                return
         event.accept()
 
     def _load_initial_config(self):
         self._update_status(C.MSG_LOADING_INITIAL_CONFIG)
         detected_match_dir = get_default_espanso_config_path()
         if not detected_match_dir or not os.path.isdir(detected_match_dir):
-            QMessageBox.warning(self, "Error", C.ERROR_ESPANSO_DIR_NOT_FOUND + 
-                                " Please ensure Espanso is installed and configured.")
+            QMessageBox.warning(
+                self,
+                "Error",
+                C.ERROR_ESPANSO_DIR_NOT_FOUND
+                + " Please ensure Espanso is installed and configured.",
+            )
             self._update_status(C.ERROR_ESPANSO_DIR_NOT_FOUND, 0)
             self.current_data, self.original_data = {}, {}
             self._safely_populate_file_selector([])
@@ -658,32 +808,42 @@ class EZpanso(QMainWindow):
             return
 
         self._update_status(C.MSG_REFRESHING_DATA)
-        
+
         # Check if a QRunnable from this instance is already running or queued
         # This is a simplified check; QThreadPool doesn't directly expose QRunnables by instance.
         # A more robust check would involve managing active runnables.
-        if isinstance(self.data_loader_thread, QRunnable) and self.thread_pool.activeThreadCount() > 0:
-             # A simple way to check if *any* thread is active, not specific to this loader.
-             # For more precise control, DataLoader could set an internal flag or emit a started signal.
-            current_active_runnable = getattr(self.data_loader_thread, '_is_running_flag', False)
+        if (
+            isinstance(self.data_loader_thread, QRunnable)
+            and self.thread_pool.activeThreadCount() > 0
+        ):
+            # A simple way to check if *any* thread is active, not specific to this loader.
+            # For more precise control, DataLoader could set an internal flag or emit a started signal.
+            current_active_runnable = getattr(
+                self.data_loader_thread, "_is_running_flag", False
+            )
             if current_active_runnable:
-                logger.info("Data loading already in progress. Ignoring refresh request.")
+                logger.info(
+                    "Data loading already in progress. Ignoring refresh request."
+                )
                 return
-            
+
         self.data_loader_thread = DataLoader(self.espanso_match_dir)
         # Add a flag to the runnable instance (optional, for more direct checking)
-        # setattr(self.data_loader_thread, '_is_running_flag', True) 
+        # setattr(self.data_loader_thread, '_is_running_flag', True)
         self.data_loader_thread.signals.data_loaded.connect(self._handle_data_loaded)
         self.thread_pool.start(self.data_loader_thread)
 
     @pyqtSlot(dict, object)
-    def _handle_data_loaded(self, loaded_data_package: Dict[str, Any], error_str: Optional[str] = None):
+    def _handle_data_loaded(
+        self, loaded_data_package: Dict[str, Any], error_str: Optional[str] = None
+    ):
         # if hasattr(self.data_loader_thread, '_is_running_flag'):
         #     setattr(self.data_loader_thread, '_is_running_flag', False)
 
         if error_str:
             UIHelpers.show_error_message(self, f"Error loading data: {error_str}")
-            self._update_status(C.MSG_LOAD_ERROR + f": {error_str}", 0)
+            # Ensure C.MSG_LOAD_ERROR is defined in your constants.py file
+            self._update_status(C.MSG_LOAD_ERROR + f": {error_str}", 0) # Pylance error here if C.MSG_LOAD_ERROR is missing
             self.current_data, self.original_data, self.file_dropdown_map = {}, {}, {}
             self._safely_populate_file_selector([])
             self.snippet_table.setRowCount(0)
@@ -705,7 +865,10 @@ class EZpanso(QMainWindow):
         self._safely_populate_file_selector(file_display_names)
         self.is_modified = False
         self._update_window_title()
-        self._update_status(f"{C.MSG_LOADED_SNIPPETS_COUNT.format(snippet_count=total_snippets, file_count=len(file_display_names))}", 5000)
+        self._update_status(
+            f"{C.MSG_LOADED_SNIPPETS_COUNT.format(snippet_count=total_snippets, file_count=len(file_display_names))}",
+            5000,
+        )
         logger.info(f"Data loaded. Active file: {self.active_file_path or 'None'}")
 
     def _safely_populate_file_selector(self, file_display_names: List[str]):
@@ -717,7 +880,7 @@ class EZpanso(QMainWindow):
             if current_selection_text and current_selection_text in file_display_names:
                 self.file_selector.setCurrentText(current_selection_text)
             elif self.file_selector.count() > 0:
-                 self.file_selector.setCurrentIndex(0)
+                self.file_selector.setCurrentIndex(0)
         self.file_selector.blockSignals(False)
         if self.file_selector.count() > 0:
             self._on_file_selected(self.file_selector.currentIndex())
@@ -735,7 +898,9 @@ class EZpanso(QMainWindow):
         new_active_file_path = self.file_dropdown_map.get(selected_display_name)
         # Only log if path actually changes to avoid spam on refresh with same file selected
         if new_active_file_path != self.active_file_path:
-            logger.info(f"File selected: {selected_display_name} (Path: {new_active_file_path})")
+            logger.info(
+                f"File selected: {selected_display_name} (Path: {new_active_file_path})"
+            )
         self.active_file_path = new_active_file_path
         self._display_snippets_for_file(self.active_file_path)
 
@@ -746,9 +911,14 @@ class EZpanso(QMainWindow):
             snippets_to_display = self.current_data[file_path]
             for snippet in snippets_to_display:
                 self._add_snippet_to_table_display(snippet)
-            self._update_status(f"Displaying: {os.path.basename(file_path)} ({len(snippets_to_display)} snippets)", 3000)
+            self._update_status(
+                f"Displaying: {os.path.basename(file_path)} ({len(snippets_to_display)} snippets)",
+                3000,
+            )
         elif file_path:
-            logger.warning(f"Attempted to display '{file_path}' but not in current_data.")
+            logger.warning(
+                f"Attempted to display '{file_path}' but not in current_data."
+            )
             self._update_status(f"No snippets for {os.path.basename(file_path)}.", 3000)
         else:
             self._update_status("No file selected.", 3000)
@@ -770,8 +940,11 @@ class EZpanso(QMainWindow):
             self.file_selector.setCurrentText(display_name_no_ext)
             self.is_modified = True
             self._update_window_title()
-            self._update_status(f"New file '{display_name_with_ext}' added. Save to backup.", 3000)
-        if dialog: dialog.deleteLater()
+            self._update_status(
+                f"New file '{display_name_with_ext}' added. Save to backup.", 3000
+            )
+        if dialog:
+            dialog.deleteLater()
 
     def _delete_category(self):
         if not self.active_file_path:
@@ -779,20 +952,26 @@ class EZpanso(QMainWindow):
             return
         file_display_name_for_msg = os.path.basename(self.active_file_path)
         reply = UIHelpers.create_confirmation_dialog(
-            self, C.MSG_CONFIRM_DELETE_FILE_TITLE,
-            C.MSG_CONFIRM_DELETE_FILE_TEXT.format(filename=file_display_name_for_msg)
+            self,
+            C.MSG_CONFIRM_DELETE_FILE_TITLE,
+            C.MSG_CONFIRM_DELETE_FILE_TEXT.format(filename=file_display_name_for_msg),
         )
         if reply == QMessageBox.StandardButton.Yes:
-            self._perform_category_deletion(self.active_file_path, file_display_name_for_msg)
+            self._perform_category_deletion(
+                self.active_file_path, file_display_name_for_msg
+            )
 
-    def _perform_category_deletion(self, original_file_path_to_delete: str, display_name_of_deleted: str):
+    def _perform_category_deletion(
+        self, original_file_path_to_delete: str, display_name_of_deleted: str
+    ):
         logger.info(f"Marking for deletion: {original_file_path_to_delete}")
         if original_file_path_to_delete in self.current_data:
             del self.current_data[original_file_path_to_delete]
         key_to_delete_from_map = None
         for name, path_in_map in self.file_dropdown_map.items():
             if path_in_map == original_file_path_to_delete:
-                key_to_delete_from_map = name; break
+                key_to_delete_from_map = name
+                break
         if key_to_delete_from_map and key_to_delete_from_map in self.file_dropdown_map:
             del self.file_dropdown_map[key_to_delete_from_map]
         self.is_modified = True
@@ -800,24 +979,34 @@ class EZpanso(QMainWindow):
         remaining_file_display_names = list(self.file_dropdown_map.keys())
         self._safely_populate_file_selector(remaining_file_display_names)
         msg = f"File '{display_name_of_deleted}' removed from working set."
-        if not remaining_file_display_names: msg += " No files remaining."
+        if not remaining_file_display_names:
+            msg += " No files remaining."
         self._update_status(msg, 3000)
-        logger.info(f"Category '{display_name_of_deleted}' removed. Changes apply to temp-ez on save.")
+        logger.info(
+            f"Category '{display_name_of_deleted}' removed. Changes apply to temp-ez on save."
+        )
 
     def _open_espanso_hub(self):
-        try: webbrowser.open(C.URL_ESPANSO_HUB)
+        try:
+            webbrowser.open(C.URL_ESPANSO_HUB)
         except Exception as e:
             logger.error(f"Could not open Espanso Hub URL: {e}", exc_info=True)
-            QMessageBox.warning(self, "Error", f"Could not open URL: {C.URL_ESPANSO_HUB}")
+            QMessageBox.warning(
+                self, "Error", f"Could not open URL: {C.URL_ESPANSO_HUB}"
+            )
 
     def _show_about_dialog(self):
-        QMessageBox.about(self, "About EZpanso",
-                          "EZpanso - Espanso Configuration Manager\nVersion 0.3 (Temp Save Update)\n\n"
-                          "Manage Espanso snippets. Changes are backed up to 'temp-ez'.")
+        QMessageBox.about(
+            self,
+            "About EZpanso",
+            "EZpanso - Espanso Configuration Manager\nVersion 0.3 (Temp Save Update)\n\n"
+            "Manage Espanso snippets. Changes are backed up to 'temp-ez'.",
+        )
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    # app.setStyle("Fusion") 
+    # app.setStyle("Fusion")
     main_window = EZpanso()
     main_window.show()
     sys.exit(app.exec())
