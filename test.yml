@@ -1,0 +1,363 @@
+matches:
+- trigger: :~/
+  replace: /Users/longman/Desktop/
+- trigger: :~=
+  replace: ≈
+- trigger: :cmd
+  replace: ⌘
+- trigger: :opt
+  replace: ⌥
+- trigger: :shift
+  replace: ⇧
+- trigger: :spacebar
+  replace: ␣
+- trigger: :today
+  replace: '{{mytoday}}'
+  vars:
+  - name: mytoday
+    type: date
+    params:
+      format: '%b %d, %Y (%a)'
+- trigger: :td
+  replace: '{{mydate}}'
+  vars:
+  - name: mydate
+    type: date
+    params:
+      format: '%Y%m%d'
+- trigger: :time
+  replace: '{{timenow}}'
+  vars:
+  - name: timenow
+    type: date
+    params:
+      format: '%H:%M'
+- trigger: :ttoday
+  replace: '{{ttoday}}'
+  vars:
+  - name: ttoday
+    type: date
+    params:
+      format: '%H:%M, %b %d, %Y (%a)'
+- trigger: :lastedit
+  replace: '{{lastedit}}'
+  vars:
+  - name: lastedit
+    type: date
+    params:
+      format: 'Last edited: %H:%M. %b %d, %Y (%a)'
+- trigger: :shell
+  replace: '{{output}}'
+  vars:
+  - name: output
+    type: shell
+    params:
+      cmd: open Library/Application Support/espanso/match/base.yml
+- trigger: :edit
+  replace: /Users/longman/Library/Application Support/espanso/match/base.yml
+- trigger: :triangle
+  replace: △
+- trigger: :square
+  replace: □
+- trigger: :circle
+  replace: ○
+- trigger: :star
+  replace: ★
+- trigger: :heart
+  replace: ♥
+- trigger: :diamond
+  replace: ♦
+- trigger: :spade
+  replace: ♠
+- trigger: :club
+  replace: ♣
+- trigger: :check
+  replace: ✓
+- trigger: :cross
+  replace: ✗
+- trigger: :music
+  replace: ♫
+- trigger: :hello
+  replace: '{{output}}'
+  vars:
+  - name: output
+    type: random
+    params:
+      choices:
+      - Hello
+      - 你好
+      - こんにちは
+      - 안녕하세요
+      - Hola
+      - Bonjour
+      - Hallo
+      - Ciao
+      - Olá
+      - Привет
+      - مرحبا
+      - नमस्ते
+      - สวัสดี
+      - Xin chào
+      - Sawubona
+      - Kia ora
+      - Hallo
+      - Hei
+      - Hej
+      - Hei
+      - God dag
+      - Selamat siang
+      - Kamusta
+      - Ahoj
+      - Szia
+      - Salve
+      - Merhaba
+      - Γειά σου
+      - Shalom
+      - Halo
+      - გამარჯობა
+      - Bula
+      - Molo
+      - Dumela
+      - Tashi delek
+      - Sawadee
+      - Selam
+      - Hujambo
+      - Kumusta
+      - Hallo
+      - Sveiki
+      - Labas
+      - Aloha
+      - Salam
+      - Salom
+      - Tere
+      - Sveiki
+      - Bok
+      - Zdravo
+      - Cześć
+      - Ahoj
+      - Halo
+      - Bună ziua
+      - Zdravstvuyte
+      - Zdravei
+      - Salam
+      - Dia dhuit
+      - Ahoj
+      - Moïen
+      - Salut
+      - नमस्कार
+      - ਸਤ ਸ੍ਰੀ ਅਕਾਲ
+      - Kem cho
+      - Namaskaram
+      - Vanakkam
+      - Namaskara
+      - Nomoskar
+      - Salam
+      - سلام
+      - Salam
+      - Përshëndetje
+      - Përshëndetje
+      - Salut
+      - Hoi
+      - Mingalaba
+      - Sain baina uu
+      - Sain baina uu
+      - Salom
+      - Salom
+- trigger: :goodbye
+  replace: '{{output}}'
+  vars:
+  - name: output
+    type: random
+    params:
+      choices:
+      - Goodbye
+      - 再见
+      - さようなら
+      - 안녕히 가세요
+      - Adiós
+      - Au revoir
+      - Auf Wiedersehen
+      - Arrivederci
+      - Adeus
+      - До свидания
+      - مع السلامة
+      - अलविदा
+      - ลาก่อน
+      - Tạm biệt
+      - Hamba kahle
+      - Haere rā
+      - Tot ziens
+      - Ha det
+      - Hej då
+      - Näkemiin
+      - Farvel
+      - Selamat tinggal
+      - Paalam
+      - Sbohem
+      - Viszlát
+      - Vale
+      - Hoşçakal
+      - Αντίο
+      - Shalom
+      - Selamat tinggal
+      - ნახვამდის
+      - Moce
+      - Sala kahle
+      - Tsamaya sentle
+      - Lha gyal lo
+      - ລາກ່ອນ
+      - Dehna hun
+      - Kwaheri
+      - Paalam
+      - Totsiens
+      - Uz redzēšanos
+      - Viso gero
+      - Aloha
+      - Sağ ol
+      - Xayr
+      - Head aega
+      - Doviđenja
+      - Zbogom
+      - Żegnaj
+      - Dovidenia
+      - Հաջողություն
+      - Xayr
+      - Zbogom
+      - Do widzenia
+      - Viso gero
+      - Kwa heri
+      - Sannu
+      - Khoda hafez
+      - Selamat tinggal
+      - Tot ziens
+      - Sbohem
+      - Adjö
+      - Da svidaniya
+      - Dovidenia
+      - Sampai jumpa
+      - La revedere
+      - Do svidaniya
+      - Сбогом
+      - Saug bol
+      - Slán
+      - Ahoj
+      - Äddi
+      - La revedere
+      - नमस्ते
+      - ਅਲਵਿਦਾ
+      - આવજો
+      - వీడ్కోలు
+      - பிரியாவிடை
+      - ವಿದಾಯ
+      - বিদায়
+      - Khuda hafiz
+      - خداحافظ
+      - Hoşçakal
+      - Mirupafshim
+      - Mirë u pafshim
+      - La revedere
+      - Oant sjen
+      - သွားတော့မယ်
+      - Bajartai
+      - Bayartai
+      - Khuda hafez
+      - Xayr
+- trigger: :thankyou
+  replace: '{{output}}'
+  vars:
+  - name: output
+    type: random
+    params:
+      choices:
+      - Thank you
+      - 谢谢
+      - ありがとうございます
+      - 감사합니다
+      - Gracias
+      - Merci
+      - Danke
+      - Grazie
+      - Obrigado
+      - Спасибо
+      - شكرا
+      - धन्यवाद
+      - ขอบคุณ
+      - Cảm ơn
+      - Ngiyabonga
+      - Ngā mihi
+      - Dank je
+      - Takk
+      - Tack
+      - Kiitos
+      - Tak
+      - Terima kasih
+      - Salamat
+      - Děkuji
+      - Köszönöm
+      - Gratias tibi
+      - Teşekkür ederim
+      - Ευχαριστώ
+      - תודה
+      - Terima kasih
+      - გმადლობთ
+      - Vinaka
+      - Enkosi
+      - Ke a leboga
+      - Thuk je che
+      - ຂອບໃຈ
+      - Ameseginalehu
+      - Asante
+      - Salamat
+      - Dankie
+      - Paldies
+      - Ačiū
+      - Mahalo
+      - Çox sağ ol
+      - Rahmat
+      - Aitäh
+      - Hvala
+      - Hvala
+      - Dziękuję
+      - Ďakujem
+      - Շնորհակալություն
+      - Rahmat
+      - Blagodaram
+      - Dziękuję
+      - Ačiū
+      - Asante
+      - Nagode
+      - Merci
+      - Terima kasih
+      - Dank je
+      - Děkuji
+      - Tack
+      - Spasibo
+      - Ďakujem
+      - Terima kasih
+      - Mulțumesc
+      - Spasibo
+      - Благодаря
+      - Rakhmet
+      - Go raibh maith agat
+      - Ďakujem
+      - Merci
+      - Mulțumesc
+      - धन्यवाद
+      - ਧੰਨਵਾਦ
+      - આભાર
+      - ధన్యవాదాలు
+      - நன்றி
+      - ಧನ್ಯವಾದಗಳು
+      - ধন্যবাদ
+      - Manana
+      - تشکر
+      - Sag bol
+      - Faleminderit
+      - Faleminderit
+      - Mulțumesc
+      - Tige tank
+      - ကျေးဇူးတင်ပါတယ်
+      - Bayarlalaa
+      - Bayarlalaa
+      - Rahmat
+      - Rahmat

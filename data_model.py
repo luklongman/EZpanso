@@ -1,6 +1,6 @@
 # data_model.py
 from typing import Dict, Any, Tuple, Optional, List
-from constants import YAML_MATCHES_KEY, COL_TRIGGER, COL_REPLACE
+from constants import COL_TRIGGER, COL_REPLACE
 
 class Snippet:
     """Represents a single Espanso snippet."""

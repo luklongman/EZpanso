@@ -19,7 +19,7 @@ from PyQt6.QtCore import (
     Qt,
     pyqtSlot,
     QThreadPool,
-)  # Removed QRunnable as it's not used directly
+)
 from PyQt6.QtGui import QKeySequence, QAction, QIcon
 from PyQt6.QtWidgets import (
     QApplication,

@@ -1,7 +1,7 @@
 # file_handler.py
 import os
 import platform
-import yaml # Requires PyYAML: pip install PyYAML
+import yaml
 from typing import Dict, List, Any, Tuple, Optional
 
 from data_model import Snippet
