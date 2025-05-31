@@ -19,8 +19,7 @@ from PyQt6.QtCore import (
     Qt,
     pyqtSlot,
     QThreadPool,
-    QRunnable,
-)  # Added QRunnable for type hint
+)  # Removed QRunnable as it's not used directly
 from PyQt6.QtGui import QKeySequence, QAction, QIcon
 from PyQt6.QtWidgets import (
     QApplication,
@@ -48,6 +47,8 @@ from ui_utils import UIHelpers
 from qt_data_loader import DataLoader, DataSaver
 from utils import get_default_espanso_config_path
 from data_model import Snippet
+from config_manager import ConfigManager
+from temp_manager import TempManager
 import constants as C
 
 logging.basicConfig(level=logging.INFO)
@@ -216,6 +217,14 @@ class EZpanso(QMainWindow):
         self.current_data: Dict[str, List[Snippet]] = {}
         self.data_loader_thread: Optional[DataLoader] = None
         self.data_saver_thread: Optional[DataSaver] = None
+        
+        # Add flag to prevent multiple simultaneous refresh operations
+        self.is_refreshing = False
+        
+        # Initialize configuration and temporary file managers
+        self.config_manager = ConfigManager()
+        self.temp_manager = TempManager()
+        
         self._set_application_icon()
 
     def _set_application_icon(self):
@@ -275,12 +284,14 @@ class EZpanso(QMainWindow):
         self.file_selector.currentIndexChanged.connect(self._on_file_selected)
         file_selector_layout.addWidget(self.file_selector)
 
-        # Using text directly for buttons, or ensure constants like C.BTN_NEW_FILE_TEXT exist
-        new_file_btn = QPushButton(C.DROPDOWN_CREATE_NEW_FILE.split(" (")[0])
+        # Use full button text with shortcuts displayed
+        new_file_btn = QPushButton(C.DROPDOWN_CREATE_NEW_FILE)
+        new_file_btn.setShortcut(QKeySequence(C.SHORTCUT_NEW_FILE))
         new_file_btn.clicked.connect(self._new_file)
         file_selector_layout.addWidget(new_file_btn)
 
-        delete_file_btn = QPushButton(C.BTN_DELETE_FILE.split(" (")[0])
+        delete_file_btn = QPushButton(C.BTN_DELETE_FILE)
+        delete_file_btn.setShortcut(QKeySequence(C.SHORTCUT_DELETE_FILE))
         delete_file_btn.clicked.connect(self._delete_category)
         file_selector_layout.addWidget(delete_file_btn)
 
@@ -313,18 +324,18 @@ class EZpanso(QMainWindow):
 
     def _setup_button_bar_ui(self, layout: QVBoxLayout):
         button_layout = QHBoxLayout()
-        # Using text from constants, ensure they are defined e.g. C.BTN_NEW_SNIPPET_TEXT
-        add_btn = QPushButton(C.BTN_NEW_SNIPPET.split(" (")[0])
+        # Use full button text with shortcuts displayed
+        add_btn = QPushButton(C.BTN_NEW_SNIPPET)
         add_btn.setShortcut(QKeySequence(C.SHORTCUT_ADD))
         add_btn.clicked.connect(self._create_new_snippet)
         button_layout.addWidget(add_btn)
 
-        edit_btn = QPushButton(C.BTN_EDIT_SNIPPET.split(" (")[0])
+        edit_btn = QPushButton(C.BTN_EDIT_SNIPPET)
         edit_btn.setShortcut(QKeySequence(C.SHORTCUT_EDIT))
         edit_btn.clicked.connect(self._edit_selected)
         button_layout.addWidget(edit_btn)
 
-        remove_btn = QPushButton(C.BTN_DELETE_SNIPPET.split(" (")[0])
+        remove_btn = QPushButton(C.BTN_DELETE_SNIPPET)
         remove_btn.setShortcut(QKeySequence(C.SHORTCUT_DELETE))
         remove_btn.clicked.connect(self._remove_selected_snippets)
         button_layout.addWidget(remove_btn)
@@ -625,15 +636,10 @@ class EZpanso(QMainWindow):
             UIHelpers.show_error_message(self, "Espanso match directory not set.")
             return
         try:
-            espanso_config_parent_dir = os.path.dirname(self.espanso_match_dir)
-            if not espanso_config_parent_dir:
-                UIHelpers.show_error_message(
-                    self, "Cannot determine parent for temp save."
-                )
-                return
-            temp_ez_dir = os.path.join(espanso_config_parent_dir, C.TEMP_EZ_FOLDER_NAME)
+            # Use TempManager to create proper temporary directory
+            temp_ez_dir = self.temp_manager.create_temp_backup_dir(self.espanso_match_dir)
         except Exception as e:
-            logger.error(f"Error determining temp_ez_dir: {e}", exc_info=True)
+            logger.error(f"Error creating temp backup directory: {e}", exc_info=True)
             UIHelpers.show_error_message(
                 self, f"Error setting up temp save location: {e}"
             )
@@ -646,8 +652,8 @@ class EZpanso(QMainWindow):
                 current_snippets_list,
                 original_snippets_list if original_snippets_list else [],
             ):
-                original_filename = os.path.basename(original_file_path)
-                temp_save_path = os.path.join(temp_ez_dir, original_filename)
+                # Use TempManager to get proper temp file path
+                temp_save_path = self.temp_manager.get_temp_file_path(original_file_path)
                 modified_files_details.append(
                     {"path": temp_save_path, "snippets": current_snippets_list}
                 )
@@ -662,7 +668,7 @@ class EZpanso(QMainWindow):
         reply = UIHelpers.create_confirmation_dialog(
             self,
             "Save Changes?",
-            f"You have {total_affected_files} file(s) with changes. Save to '{C.TEMP_EZ_FOLDER_NAME}' backup?",
+            f"You have {total_affected_files} file(s) with changes. Save to temp backup?",
         )
         if reply == QMessageBox.StandardButton.Yes:
             self._execute_save_to_temp_ez(
@@ -691,29 +697,19 @@ class EZpanso(QMainWindow):
         files_to_save_pkg: List[Dict[str, Any]],
         deleted_original_paths: List[str],
     ):
-        try:
-            if not os.path.exists(temp_ez_dir):
-                os.makedirs(temp_ez_dir, exist_ok=True)
-                logger.info(f"Created temp directory: {temp_ez_dir}")
-        except Exception as e:
-            logger.error(
-                f"Error creating temp directory {temp_ez_dir}: {e}", exc_info=True
-            )
-            UIHelpers.show_error_message(self, f"Error creating temp directory: {e}")
-            return
+        # temp_ez_dir is already created by TempManager, so we can use it directly
 
         for original_file_path_to_delete in deleted_original_paths:
-            original_filename = os.path.basename(original_file_path_to_delete)
-            temp_file_to_delete_path = os.path.join(temp_ez_dir, original_filename)
+            temp_file_to_delete_path = self.temp_manager.get_temp_file_path(original_file_path_to_delete)
             if os.path.exists(temp_file_to_delete_path):
                 try:
                     os.remove(temp_file_to_delete_path)
                     logger.info(
-                        f"Deleted {temp_file_to_delete_path} from {C.TEMP_EZ_FOLDER_NAME}."
+                        f"Deleted {temp_file_to_delete_path} from temp backup."
                     )
                 except Exception as e:
                     logger.error(
-                        f"Error deleting {temp_file_to_delete_path} from {C.TEMP_EZ_FOLDER_NAME}: {e}",
+                        f"Error deleting {temp_file_to_delete_path} from temp backup: {e}",
                         exc_info=True,
                     )
 
@@ -725,7 +721,7 @@ class EZpanso(QMainWindow):
 
         if files_to_save_pkg:
             self._update_status(
-                f"Saving {len(files_to_save_pkg)} file(s) to {C.TEMP_EZ_FOLDER_NAME}...",
+                f"Saving {len(files_to_save_pkg)} file(s) to temp backup...",
                 0,
             )
             self.data_saver_thread = DataSaver(files_to_save_pkg)
@@ -740,7 +736,7 @@ class EZpanso(QMainWindow):
     def _handle_save_complete(self, saved_temp_files_paths: List[str]):
         num_saved = len(saved_temp_files_paths)
         self._update_status(
-            f"Successfully saved changes to '{C.TEMP_EZ_FOLDER_NAME}'. ({num_saved} file(s) written/updated).",
+            f"Successfully saved changes to temp backup. ({num_saved} file(s) written/updated).",
             5000,
         )
         self.is_modified = False
@@ -750,7 +746,7 @@ class EZpanso(QMainWindow):
 
     def _handle_save_error(self, error_message: str):
         UIHelpers.show_error_message(
-            self, f"Error saving to '{C.TEMP_EZ_FOLDER_NAME}': {error_message}"
+            self, f"Error saving to temp backup: {error_message}"
         )
         self._update_status(f"Error saving changes: {error_message}", 0)
 
@@ -777,10 +773,27 @@ class EZpanso(QMainWindow):
             elif reply == QMessageBox.StandardButton.Cancel:
                 event.ignore()
                 return
+        
+        # Save the current file selection and window geometry
+        if self.active_file_path:
+            self.config_manager.set_last_selected_file(self.active_file_path)
+        
+        # Note: We don't automatically cleanup temp files on exit
+        # They remain as backups for the user
         event.accept()
 
     def _load_initial_config(self):
         self._update_status(C.MSG_LOADING_INITIAL_CONFIG)
+        
+        # Try to load saved match directory from config
+        saved_match_dir = self.config_manager.get_match_folder_path()
+        if saved_match_dir and os.path.isdir(saved_match_dir):
+            self.espanso_match_dir = saved_match_dir
+            logger.info(f"Using saved Espanso match directory: {self.espanso_match_dir}")
+            self._refresh_data()
+            return
+        
+        # Fall back to auto-detection
         detected_match_dir = get_default_espanso_config_path()
         if not detected_match_dir or not os.path.isdir(detected_match_dir):
             QMessageBox.warning(
@@ -795,8 +808,11 @@ class EZpanso(QMainWindow):
             self.snippet_table.setRowCount(0)
             self._ensure_empty_bottom_row()
             return
+        
         self.espanso_match_dir = detected_match_dir
-        logger.info(f"Espanso match directory set to: {self.espanso_match_dir}")
+        # Save the detected directory for future use
+        self.config_manager.set_match_folder_path(detected_match_dir)
+        logger.info(f"Detected and saved Espanso match directory: {self.espanso_match_dir}")
         self._refresh_data()
 
     def _refresh_data(self):
@@ -807,29 +823,21 @@ class EZpanso(QMainWindow):
             self._safely_populate_file_selector([])
             return
 
+        # Prevent multiple simultaneous refresh operations
+        if self.is_refreshing:
+            logger.info("Refresh already in progress. Ignoring additional refresh request.")
+            return
+
+        self.is_refreshing = True
         self._update_status(C.MSG_REFRESHING_DATA)
 
-        # Check if a QRunnable from this instance is already running or queued
-        # This is a simplified check; QThreadPool doesn't directly expose QRunnables by instance.
-        # A more robust check would involve managing active runnables.
-        if (
-            isinstance(self.data_loader_thread, QRunnable)
-            and self.thread_pool.activeThreadCount() > 0
-        ):
-            # A simple way to check if *any* thread is active, not specific to this loader.
-            # For more precise control, DataLoader could set an internal flag or emit a started signal.
-            current_active_runnable = getattr(
-                self.data_loader_thread, "_is_running_flag", False
-            )
-            if current_active_runnable:
-                logger.info(
-                    "Data loading already in progress. Ignoring refresh request."
-                )
-                return
+        # Cancel any existing data loader
+        if self.data_loader_thread is not None:
+            # Note: QRunnable doesn't have a direct cancel method
+            # The thread will complete but we'll ignore its signal
+            self.data_loader_thread = None
 
         self.data_loader_thread = DataLoader(self.espanso_match_dir)
-        # Add a flag to the runnable instance (optional, for more direct checking)
-        # setattr(self.data_loader_thread, '_is_running_flag', True)
         self.data_loader_thread.signals.data_loaded.connect(self._handle_data_loaded)
         self.thread_pool.start(self.data_loader_thread)
 
@@ -837,13 +845,12 @@ class EZpanso(QMainWindow):
     def _handle_data_loaded(
         self, loaded_data_package: Dict[str, Any], error_str: Optional[str] = None
     ):
-        # if hasattr(self.data_loader_thread, '_is_running_flag'):
-        #     setattr(self.data_loader_thread, '_is_running_flag', False)
+        # Reset the refreshing flag
+        self.is_refreshing = False
 
         if error_str:
             UIHelpers.show_error_message(self, f"Error loading data: {error_str}")
-            # Ensure C.MSG_LOAD_ERROR is defined in your constants.py file
-            self._update_status(C.MSG_LOAD_ERROR + f": {error_str}", 0) # Pylance error here if C.MSG_LOAD_ERROR is missing
+            self._update_status(C.MSG_LOAD_ERROR + f": {error_str}", 0)
             self.current_data, self.original_data, self.file_dropdown_map = {}, {}, {}
             self._safely_populate_file_selector([])
             self.snippet_table.setRowCount(0)
@@ -863,6 +870,16 @@ class EZpanso(QMainWindow):
             logger.warning(f"Some files had issues during loading: {error_summary}")
 
         self._safely_populate_file_selector(file_display_names)
+        
+        # Try to restore the last selected file
+        last_selected_file = self.config_manager.get_last_selected_file()
+        if last_selected_file and last_selected_file in self.current_data:
+            # Find the display name for this file path
+            for display_name, file_path in self.file_dropdown_map.items():
+                if file_path == last_selected_file:
+                    self.file_selector.setCurrentText(display_name)
+                    break
+        
         self.is_modified = False
         self._update_window_title()
         self._update_status(
@@ -920,7 +937,7 @@ class EZpanso(QMainWindow):
                 f"Attempted to display '{file_path}' but not in current_data."
             )
             self._update_status(f"No snippets for {os.path.basename(file_path)}.", 3000)
-        else:
+        else:   
             self._update_status("No file selected.", 3000)
         self.snippet_table.blockSignals(False)
         self._ensure_empty_bottom_row()
@@ -941,7 +958,7 @@ class EZpanso(QMainWindow):
             self.is_modified = True
             self._update_window_title()
             self._update_status(
-                f"New file '{display_name_with_ext}' added. Save to backup.", 3000
+                f"New file '{display_name_with_ext}' added. Save to create backup.", 3000
             )
         if dialog:
             dialog.deleteLater()

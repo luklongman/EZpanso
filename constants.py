@@ -89,7 +89,7 @@ BTN_ESPANSO_HUB = "Espanso Hub"
 BTN_SAVE_ALL = "Save All"
 
 # Dropdown Options
-DROPDOWN_CREATE_NEW_FILE = "Create new file (⌘⇧N)"
+DROPDOWN_CREATE_NEW_FILE = "➕ Create new file (⌘⇧N)"
 DROPDOWN_SELECT_MATCH_FOLDER = "📁 Select match folder..."
 
 # Errors

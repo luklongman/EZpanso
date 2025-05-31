@@ -6,5 +6,12 @@
     "search.exclude": {
         "archives/": true,
         "test_*": true
-    }
+    },
+    "spellright.language": [
+        "en"
+    ],
+    "spellright.documentTypes": [
+        "latex",
+        "plaintext"
+    ]
 }

@@ -74,17 +74,7 @@
 
 ### 2.1 Feature Implementation Status
 
-| Feature | main.py | main_minimal.py | main_tkinter.py | Status |
-|---------|---------|-----------------|-----------------|---------|
-| Load Espanso Config | ✅ | ✅ | ⚠️ Basic | Working |
-| Category Management | ✅ | ⚠️ Stubs | ❌ | Partial |
-| Add Snippets | ✅ | ⚠️ Stubs | ✅ | Working |
-| Edit Snippets | ✅ | ⚠️ Stubs | ✅ | Working |
-| Delete Snippets | ✅ | ⚠️ Stubs | ⚠️ Basic | Partial |
-| Keyboard Shortcuts | ✅ | ⚠️ Partial | ❌ | Partial |
-| Auto-save | ✅ | ✅ | ❌ | Partial |
-| Inline Editing | ✅ | ❌ | ❌ | Limited |
-| Multi-select | ✅ | ❌ | ❌ | Limited |
+1. Proper file handling: No temp files. But get save with confirmation.
 
 ### 2.2 Architecture Issues
 
