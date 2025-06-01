@@ -1,6 +1,6 @@
 # EZpanso
 
-**Managing Espanso matches made even easier.**
+**Easy editor for Espanso matches**
 
 A minimal GUI app for managing your [Espanso](https://espanso.org/) text expansion matches. Built with PyQt6 for a native, responsive experience across platforms.
 
@@ -8,30 +8,25 @@ A minimal GUI app for managing your [Espanso](https://espanso.org/) text expansi
 
 ## ✨ Features
 
-### 🎯 Workflow
-
-- **📂 Open** - Default or customized path for Espanso match files and packages
-- **✏️ Edit** - In-place editing for simple matches
-- **🆕 Create** - Make new matches
+- **📂 Open Match Files** - Espanso match files and packages at default or custom folderpath.
+- **🔍 Find & Sort** - Quick filter and sortable columns
+- **📄 Multi-line Replacement** - Support `\n` for line breaks and `\t` for tabs
+- **✏️ Edit** - In-place editing for simple matches with full undo/redo support
+- **🆕 Create** - Make new matches with duplicate prevention
 - **🗑️ Delete** - Safe deletion with confirmation dialogs
 - **💾 Save** - Preserve original YAML structure and comments
-
-### 🚀 Features
-
-- **🔍 Find & Sort** - Quick filtering and intelligent sorting of matches
-- **📄 Multi-line Replacement** - Support `\n` for line breaks and `\t` for tabs
-- **‼️ Duplicate Prevention** - Instant validation
 - **🛡️ Dynamic Match Protection** - Matches with variables or conditions are shown in gray and not editable
 - **🌍 Multi-platform** - Works on macOS, Linux, and Windows
 
 ### ⚡ Keyboard Shortcuts
 
-- `Cmd+N` (macOS) / `Ctrl+N` - New snippet
+- `Cmd+N` (macOS) / `Ctrl+N` - New match
 - `Cmd+S` (macOS) / `Ctrl+S` - Save all changes  
-- `Cmd+F` (macOS) / `Ctrl+F` - Find/filter snippets
+- `Cmd+F` (macOS) / `Ctrl+F` - Find matches
 - `Cmd+Z` (macOS) / `Ctrl+Z` - Undo
 - `Cmd+Shift+Z` (macOS) / `Ctrl+Y` - Redo
-- `Delete` / `Backspace` - Delete selected snippets
+- `Delete` / `Backspace` - Delete selected matches
+- `Cmd+O` (macOS) / `Ctrl+O` - Set folder
 
 ## 📥 Installation
 
@@ -46,20 +41,21 @@ A minimal GUI app for managing your [Espanso](https://espanso.org/) text expansi
 **Requirements:** Python 3.11+
 
 ```bash
-# Clone the repository
+# 1. Clone the repository
 git clone https://github.com/luklongman/EZpanso.git
 cd EZpanso
 
-# Install with Poetry (recommended)
-poetry install
-poetry run ezpanso
-
-# Or install with pip
+# 2a. Install dependencies and run with pip
 pip install -r requirements.txt
 python main.py
+
+# 2b. Or with Poetry 
+poetry install
+poetry run python main.py
 ```
 
 **Dependencies:**
+
 - PyQt6
 - PyYAML
 
