@@ -3,7 +3,8 @@
 
 <img src="https://github.com/user-attachments/assets/171a0cfc-f1e6-4070-94a0-eb83ef7c1163" alt="icon_512x512@2x" width="15%" />
 
-A minimal GUI app for managing your [Espanso](https://espanso.org/) text expansion matches. Built with PyYAML & PyQt6. Available across platforms.
+A minimal GUI app for managing your [Espanso](https://espanso.org/) text expansion matches. Built with PyYAML & PyQt6.
+DMG available for MacOS. Python installation available across platforms.
 
 https://github.com/user-attachments/assets/47499f82-af35-42ba-9cab-21e8aa332cc5
 
