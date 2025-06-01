@@ -1,49 +1,93 @@
-# EZpanso - Espanso Manager
+# EZpanso
 
-A minimal GUI app for managing Espanso text expansion snippets with focus on simplicity and reliability.
+**Managing Espanso matches made even easier.**
 
-## Overview
+A modern, intuitive GUI application for managing your [Espanso](https://espanso.org/) text expansion snippets. Built with PyQt6 for a native, responsive experience across platforms.
 
-EZpanso provides an intuitive interface to view, edit, and manage your Espanso YAML configuration files without the complexity of dealing with raw YAML syntax. The application follows a 7-step core workflow designed for efficiency and safety.
+![EZpanso Screenshot](screenshot.png)
 
-## Current Features
+## ✨ Features
 
-### ✅ Core Functionality (Implemented)
+### 🎯 Core Workflow
+- **📂 Open** - Automatic detection of Espanso match files and packages
+- **🔍 Find & Sort** - Quick filtering and intelligent sorting of matches  
+- **✏️ Edit** - In-place editing for simple trigger/replace pairs
+- **🗑️ Delete** - Safe deletion with confirmation dialogs
+- **💾 Save** - Preserve original YAML structure and comments
 
-**File Management:**
+### 🚀 Smart Features
+- **Duplicate Prevention** - Real-time checking prevents duplicate triggers
+- **Complex Match Protection** - Advanced snippets (with variables, conditions) are protected from accidental modification
+- **Undo/Redo** - Full operation history with keyboard shortcuts
+- **Multi-platform** - Works on macOS, Linux, and Windows
 
-- Automatic detection of Espanso directories (`~/Library/Application Support/espanso/match` on macOS, `~/.config/espanso/match` on Linux)
-- Recursive loading of all YAML files including subfolders
-- Smart display names (shows parent folder for `package.yml` files)
-- File selector dropdown for easy navigation
+### ⚡ Keyboard Shortcuts
+- `Cmd+N` (macOS) / `Ctrl+N` - New snippet
+- `Cmd+S` (macOS) / `Ctrl+S` - Save all changes  
+- `Cmd+F` (macOS) / `Ctrl+F` - Find/filter snippets
+- `Cmd+Z` (macOS) / `Ctrl+Z` - Undo
+- `Cmd+Shift+Z` (macOS) / `Ctrl+Y` - Redo
+- `Delete` / `Backspace` - Delete selected snippets
 
-**Snippet Viewing & Editing:**
+## 📥 Installation
 
-- Clean table interface with Trigger/Replace columns
-- In-place editing with real-time validation
-- Duplicate trigger detection and prevention
-- Visual indication of complex snippets (grayed out, non-editable)
-- Automatic preservation of complex YAML structures
+### Download (Recommended)
 
-**Data Safety:**
+**macOS:**
+1. Download the latest `EZpanso-x.x.x.dmg` from [Releases](https://github.com/luklongman/EZpanso/releases)
+2. Open the DMG and drag EZpanso to Applications
+3. Launch EZpanso from Launchpad or Applications folder
 
-- Modification tracking with visual indicators (asterisk in title)
-- Confirmation dialogs before saving
-- Preservation of existing YAML structure and comments
-- Backup-safe file operations
+**Windows & Linux:**
+Coming soon! For now, use the Python installation method below.
 
-**User Experience:**
+### Python Installation
 
-- Responsive table with adjustable column widths
-- Clear error messages and warnings
-- Cross-platform compatibility (macOS, Linux, Windows)
+If you have Python 3.11+ installed:
 
-### 🔒 Safety Features
+```bash
+# Clone the repository
+git clone https://github.com/luklongman/EZpanso.git
+cd EZpanso
 
-- **Complex Snippet Protection**: Snippets with variables, conditions, or advanced features are automatically detected and protected from accidental modification
-- **Duplicate Prevention**: Real-time checking prevents duplicate triggers within the same file
-- **Structure Preservation**: All non-match YAML content is preserved during saves
-- **Confirmation Required**: All save operations require explicit user confirmation
+# Install with Poetry (recommended)
+poetry install
+poetry run ezpanso
+
+# Or install with pip
+pip install -r requirements.txt
+python main.py
+```
+
+## 🚀 Quick Start
+
+1. **Launch EZpanso** - The app automatically detects your Espanso configuration
+2. **Select a file** - Choose from the dropdown to view/edit matches
+3. **Edit snippets** - Double-click any trigger or replacement text to edit
+4. **Add new snippets** - Click "New" or press `Cmd+N`
+5. **Save changes** - Press `Cmd+S` when ready to save
+
+### 🎯 Pro Tips
+- Use `\n` for line breaks and `\t` for tabs in replacements
+- Complex snippets (with variables, forms, etc.) are shown in gray and protected
+- The asterisk (*) in the title indicates unsaved changes
+- Right-click selected rows for quick delete options
+
+## 🔧 Configuration
+
+EZpanso automatically finds your Espanso directory:
+- **macOS**: `~/Library/Application Support/espanso/match`
+- **Linux**: `~/.config/espanso/match` 
+- **Windows**: `%APPDATA%\espanso\match`
+
+To use a custom directory, go to **File → Set Custom Folder**.
+
+## 🛡️ Safety Features
+
+- **Non-destructive editing** - Original YAML structure and comments are preserved
+- **Complex snippet protection** - Advanced Espanso features remain untouched
+- **Confirmation dialogs** - All save operations require explicit confirmation
+- **Backup recommended** - Always backup your Espanso config before major edits
 
 ## Technical Architecture
 
@@ -116,29 +160,73 @@ matches:
     replace: "user@example.com"
 ```
 
-## Contributing
+## 🏗️ Development
 
-EZpanso is designed to be simple and maintainable. When contributing:
+### Building from Source
 
-1. **Follow the 7-step workflow pattern** established in the core
-2. **Maintain backward compatibility** with existing Espanso files
-3. **Add comprehensive error handling** for new features
-4. **Keep dependencies minimal** - avoid adding new requirements unless essential
-5. **Test cross-platform** - ensure features work on all supported platforms
+**Requirements:**
+- Python 3.11+
+- Poetry (recommended) or pip
 
-## License
+**Setup:**
+```bash
+git clone https://github.com/luklongman/EZpanso.git
+cd EZpanso
+poetry install
+```
 
-[Specify your license here]
+**Run in development:**
+```bash
+poetry run python main.py
+```
 
-## Support
+**Build macOS app:**
+```bash
+./build_macos.sh
+```
 
-For issues, feature requests, or questions:
+### Architecture
 
-- Create an issue in the project repository
-- Ensure you include your OS, Python version, and steps to reproduce any problems
+EZpanso follows a clean, modular architecture:
+
+- **main.py** - Main application entry point and UI logic
+- **EZpanso.spec** - PyInstaller configuration for app bundling
+- **pyproject.toml** - Project dependencies and metadata
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit issues and pull requests.
+
+### Development Guidelines
+- Follow PEP 8 style guidelines
+- Add tests for new features
+- Update documentation as needed
+- Test on multiple platforms when possible
+
+## 📋 Roadmap
+
+- [ ] Windows and Linux app bundles
+- [ ] Snippet templates and categories
+- [ ] Import/export functionality
+- [ ] Dark mode support
+- [ ] Plugin system for custom snippet types
+
+## ⚖️ License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [Espanso](https://espanso.org/) - The amazing text expander that makes this tool necessary
+- [PyQt6](https://riverbankcomputing.com/software/pyqt/) - For the excellent GUI framework
+- [PyYAML](https://pyyaml.org/) - For robust YAML handling
+
+## 📞 Support
+
+- 🐛 **Issues**: [GitHub Issues](https://github.com/luklongman/EZpanso/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/luklongman/EZpanso/discussions)
+- 🌐 **Website**: [EZpanso on GitHub](https://github.com/luklongman/EZpanso)
 
 ---
 
-**Current Status**: Core functionality complete and stable  
-**Next Release**: v0.2.0 with enhanced editing features  
-**Last Updated**: June 1, 2025
+**Made with ❤️ by [Longman](https://www.instagram.com/l.ongman) • June 2025**

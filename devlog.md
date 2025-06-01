@@ -6,7 +6,7 @@
 
 - [✅] **Add New Snippets**: Empty row at bottom for quick snippet creation
 - [✅] **Delete Snippets**: Right-click context menu with delete option + multi-select support + Delete/Backspace keys
-- [ ] **Multi-line Support**: Proper handling of multi-line replacements
+- [✅] **Multi-line Support**: In-place editing with escape sequences (\n, \t) handling
 - [✅] **Keyboard Shortcuts**: Complete - New (⌘N), Save (⌘S), Find (⌘F), Delete (Del/Backspace)
 - [✅] **Undo/Redo**: Basic operation history
 
@@ -17,6 +17,7 @@
 - [✅] **Search Functionality**: Filter snippets by trigger or replace text
 - [✅] **Sorting Options**: Sort by trigger, replace, or file
 - [✅] **Bulk Operations**: Select multiple snippets for bulk edit/delete
+- [✅] **UI Polish**: Custom app icon (PNG format), simplified dialog handling
 - [ ] **Statistics**: Status bar, snippet counts and action feedback
 
 ### 🎯 Milestone 3: Advanced Features (v0.4.0)
@@ -31,7 +32,7 @@
 
 ### 🎯 Milestone 4: Power User Features (v0.5.0)
 
-**Target: 8 weeks**
+**Target: 8 weeks**"
 
 - [ ] **Advanced Editor**: Syntax highlighting for complex snippets
 - [ ] **Validation**: Real-time YAML syntax checking
