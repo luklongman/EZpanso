@@ -19,8 +19,8 @@ class EZpanso(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("EZpanso")
-        self.resize(800, 600)
-        
+        self.resize(600, 800)
+        "multi\nline"
         # Step 1-2: Data storage - simple dictionaries
         self.files_data: FileData = {}  # file_path -> list of match dicts
         self.file_paths: List[str] = []  # ordered list of file paths
@@ -39,13 +39,32 @@ class EZpanso(QMainWindow):
         
         self._setup_ui()
         self._load_all_yaml_files()
+    
+    def _format_yaml_value(self, value: str) -> str:
+        """Store value as-is - YAML will handle quoting automatically when saving."""
+        return value
+    
+    def _get_display_value(self, value: str) -> str:
+        """Get the display value for UI, converting actual newlines/tabs to escape sequences."""
+        if not isinstance(value, str):
+            return str(value)
+        # Convert actual newlines and tabs to escape sequences for display
+        display_value = value.replace('\n', '\\n').replace('\t', '\\t')
+        return display_value
+    
+    def _process_escape_sequences(self, value: str) -> str:
+        """Convert escape sequences like \\n and \\t to actual characters."""
+        if not isinstance(value, str):
+            return str(value)
+        # Convert escape sequences to actual characters
+        processed_value = value.replace('\\n', '\n').replace('\\t', '\t')
+        return processed_value
         
     def _setup_ui(self):
         """Simple UI setup."""
         central = QWidget()
         self.setCentralWidget(central)
         layout = QVBoxLayout(central)
-        self.resize(600, 880)  # Make window thinner and longer
         
         # File selector dropdown
         file_layout = QHBoxLayout()
@@ -65,8 +84,6 @@ class EZpanso(QMainWindow):
         self.table = QTableWidget()
         self.table.setColumnCount(2)
         self.table.setHorizontalHeaderLabels(["Trigger", "Replace"])
-        
-        # Enable sorting
         self.table.setSortingEnabled(True)
         
         # Enable context menu
@@ -236,12 +253,16 @@ class EZpanso(QMainWindow):
             trigger = str(match.get('trigger', ''))
             replace = str(match.get('replace', ''))
             
+            # Display unquoted values in UI for both trigger and replace
+            display_trigger = self._get_display_value(trigger)
+            display_replace = self._get_display_value(replace)
+            
             # Step 4: Check if complex (more than trigger/replace)
             is_complex = self._is_complex_match(match)
             
             # Create table items
-            trigger_item = QTableWidgetItem(trigger)
-            replace_item = QTableWidgetItem(replace)
+            trigger_item = QTableWidgetItem(display_trigger)
+            replace_item = QTableWidgetItem(display_replace)
             
             if is_complex:
                 # Gray out complex matches and prevent editing
@@ -454,6 +475,9 @@ class EZpanso(QMainWindow):
         col = item.column()
         new_value = item.text()
         
+        # Process escape sequences in the input
+        new_value = self._process_escape_sequences(new_value)
+        
         # Get the trigger value to find the corresponding match in original data
         trigger_item = self.table.item(row, 0)
         if not trigger_item:
@@ -467,7 +491,10 @@ class EZpanso(QMainWindow):
         target_index = -1
         
         for i, match in enumerate(matches):
-            if str(match.get('trigger', '')) == current_trigger:
+            # Compare using display values for consistency
+            stored_trigger = str(match.get('trigger', ''))
+            display_trigger = self._get_display_value(stored_trigger)
+            if display_trigger == current_trigger:
                 target_match = match
                 target_index = i
                 break
@@ -475,11 +502,14 @@ class EZpanso(QMainWindow):
         if target_match is None:
             return
         
-        # Save state before making changes
+        # Get old value for comparison
         old_value = target_match.get('trigger' if col == 0 else 'replace', '')
-        if str(old_value) != new_value:  # Only save state if value actually changed
+        compare_value = self._get_display_value(str(old_value)) if col == 1 else str(old_value)
+        
+        # Save state before making changes
+        if compare_value != new_value:  # Only save state if value actually changed
             if col == 0:
-                self._save_state(f"Edit trigger: '{old_value}' → '{new_value}'")
+                self._save_state(f"Edit trigger: '{compare_value}' → '{new_value}'")
             else:
                 self._save_state(f"Edit replace: '{current_trigger}' content")
         
@@ -489,11 +519,18 @@ class EZpanso(QMainWindow):
             for i, other_match in enumerate(matches):
                 if i != target_index and other_match.get('trigger') == new_value:
                     QMessageBox.warning(self, "Duplicate", f"Trigger '{new_value}' already exists!")
-                    item.setText(str(target_match.get('trigger', '')))  # Revert
+                    item.setText(self._get_display_value(str(target_match.get('trigger', ''))))  # Revert
                     return
-            target_match['trigger'] = new_value
+            # Format the trigger value with proper YAML quoting for consistency
+            formatted_value = self._format_yaml_value(new_value)
+            target_match['trigger'] = formatted_value
         elif col == 1:  # Replace column
-            target_match['replace'] = new_value
+            # Format the replace value with proper YAML quoting if needed
+            formatted_value = self._format_yaml_value(new_value)
+            target_match['replace'] = formatted_value
+        
+        # Update the item display to show escape sequences properly
+        item.setText(self._get_display_value(new_value))
         
         self.is_modified = True
         self._update_title()
@@ -528,9 +565,9 @@ class EZpanso(QMainWindow):
                 # Update matches section
                 existing_content['matches'] = matches
                 
-                # Write back
+                # Write back with double quotes as default style
                 with open(file_path, 'w', encoding='utf-8') as f:
-                    yaml.dump(existing_content, f, sort_keys=False, allow_unicode=True)
+                    yaml.dump(existing_content, f, sort_keys=False, allow_unicode=True, default_style='"')
                 
                 saved_count += 1
                 
@@ -556,7 +593,7 @@ class EZpanso(QMainWindow):
         dialog = QDialog(self)
         dialog.setWindowTitle("New Snippet")
         dialog.setModal(True)
-        dialog.resize(400, 120)
+        dialog.resize(400, 160)  # Increased height for reminder
         
         layout = QVBoxLayout(dialog)
         
@@ -579,6 +616,12 @@ class EZpanso(QMainWindow):
         replace_input.setPlaceholderText("johnny@water.com")
         replace_layout.addWidget(replace_input)
         layout.addLayout(replace_layout)
+        
+        # Reminder about special characters
+        reminder_label = QLabel("💡 Type \\n for new lines, \\t for tabs. YAML special characters are handled automatically.")
+        reminder_label.setStyleSheet("color: #666; font-size: 11px; padding: 5px;")
+        reminder_label.setWordWrap(True)
+        layout.addWidget(reminder_label)
         
         # Buttons
         button_layout = QHBoxLayout()
@@ -606,6 +649,10 @@ class EZpanso(QMainWindow):
                 QMessageBox.warning(self, "Invalid Input", "Both trigger and replace must be filled.")
                 return
             
+            # Process escape sequences in both trigger and replace
+            trigger = self._process_escape_sequences(trigger)
+            replace = self._process_escape_sequences(replace)
+            
             # Check for duplicates
             existing_triggers = [match.get('trigger', '') for match in self.files_data[self.active_file_path]]
             if trigger in existing_triggers:
@@ -615,8 +662,12 @@ class EZpanso(QMainWindow):
             # Save state before adding new snippet
             self._save_state(f"Add snippet: '{trigger}'")
             
+            # Format both trigger and replace values with proper YAML quoting for consistency
+            formatted_trigger = self._format_yaml_value(trigger)
+            formatted_replace = self._format_yaml_value(replace)
+            
             # Add new snippet
-            new_snippet = {'trigger': trigger, 'replace': replace}
+            new_snippet = {'trigger': formatted_trigger, 'replace': formatted_replace}
             self.files_data[self.active_file_path].append(new_snippet)
             
             # Mark as modified and refresh
@@ -719,10 +770,13 @@ class EZpanso(QMainWindow):
         self._update_title()
         if self.active_file_path == state['file_path']:
             self._populate_table(self.files_data[state['file_path']])
-
-
-if __name__ == "__main__":
+    
+def main():
+    """Main entry point."""
     app = QApplication(sys.argv)
     window = EZpanso()
     window.show()
     sys.exit(app.exec())
+
+if __name__ == "__main__":
+    main()

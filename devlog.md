@@ -17,7 +17,7 @@
 - [✅] **Search Functionality**: Filter snippets by trigger or replace text
 - [✅] **Sorting Options**: Sort by trigger, replace, or file
 - [✅] **Bulk Operations**: Select multiple snippets for bulk edit/delete
-- [ ] **Statistics**: Show snippet counts
+- [ ] **Statistics**: Status bar, snippet counts and action feedback
 
 ### 🎯 Milestone 3: Advanced Features (v0.4.0)
 
