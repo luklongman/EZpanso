@@ -126,11 +126,13 @@ cython_debug/
 # VS Code
 .vscode/
 
-# Archives
-archives/
-
-# Docs
-docs/
-
 # macOS
 .DS_Store
+
+# Release artifacts (keep local, don't commit)
+*.dmg
+*.pkg
+*.app
+
+# Archives
+archives/
