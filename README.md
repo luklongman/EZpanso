@@ -1,6 +1,6 @@
 # EZpanso
 
-**Easy editor for Espanso matches**
+**Easy editor for Espanso**
 
 A minimal GUI app for managing your [Espanso](https://espanso.org/) text expansion matches. Built with PyQt6 for a native, responsive experience across platforms.
 
