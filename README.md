@@ -1,10 +1,11 @@
 # EZpanso
-
 **Easy editor for Espanso**
 
-A minimal GUI app for managing your [Espanso](https://espanso.org/) text expansion matches. Built with PyQt6 for a native, responsive experience across platforms.
+<img src="https://github.com/user-attachments/assets/171a0cfc-f1e6-4070-94a0-eb83ef7c1163" alt="icon_512x512@2x" width="15%" />
 
-![EZpanso Screenshot](screenshot.png)
+A minimal GUI app for managing your [Espanso](https://espanso.org/) text expansion matches. Built with PyYAML & PyQt6. Available across platforms.
+
+https://github.com/user-attachments/assets/47499f82-af35-42ba-9cab-21e8aa332cc5
 
 ## ✨ Features
 
@@ -122,13 +123,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Espanso](https://espanso.org/) - The amazing text expander.
 - [PyQt6](https://riverbankcomputing.com/software/pyqt/) - Python GUI framework
 - [PyYAML](https://pyyaml.org/) - For YAML handling
-
-## 📞 Support
-
-- 🐛 **Issues**: [GitHub Issues](https://github.com/luklongman/EZpanso/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/luklongman/EZpanso/discussions)
-- 🌐 **Website**: [EZpanso on GitHub](https://github.com/luklongman/EZpanso)
-
----
 
 **by [Longman](https://www.instagram.com/l.ongman) • June 2025**
