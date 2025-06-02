@@ -46,13 +46,13 @@ if command -v create-dmg &> /dev/null; then
         --hide-extension "EZpanso.app" \
         --app-drop-link 600 185 \
         --format UDZO \
-        "EZpanso-1.0.0.dmg" \
+        "EZpanso-1.1.0.dmg" \
         "dmg_temp/"
     
     # Clean up
     rm -rf dmg_temp/
     
-    echo "✅ DMG created: EZpanso-1.0.0.dmg"
+    echo "✅ DMG created: EZpanso-1.1.0.dmg"
 else
     echo "⚠️  create-dmg not found. Skipping DMG creation."
     echo "   Install with: brew install create-dmg"

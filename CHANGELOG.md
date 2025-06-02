@@ -5,6 +5,21 @@ All notable changes to EZpanso will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-06-02
+
+### Fixed
+
+- 🍎 **macOS Compatibility** - Fixed "application is not supported on this Mac" error by building universal binary for both Intel and Apple Silicon architectures
+- 🛡️ **Dialog Workflow** - Dialog stays open when validation fails, allowing users to fix issues without starting over
+- 💾 **File Modification Tracking** - Improved save operations to only save modified files
+- 🎯 **User Experience** - Enhanced workflow when dealing with duplicate triggers or empty fields
+
+### Technical
+
+- Built with universal2 target architecture for full macOS compatibility
+- Rebuilt PyYAML from source to support universal binary creation
+- Improved error handling and user feedback in match creation dialogs
+
 ## [1.0.0] - 2025-06-01
 
 ### Added

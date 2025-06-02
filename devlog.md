@@ -18,7 +18,8 @@
 - [✅] **Sorting Options**: Sort by trigger, replace, or file
 - [✅] **Bulk Operations**: Select multiple snippets for bulk edit/delete
 - [✅] **UI Polish**: Custom app icon (PNG format), simplified dialog handling
-- [ ] **Statistics**: Status bar, snippet counts and action feedback
+- [✅] **Statistics**: Status bar, snippet counts and action feedback
+- [✅] **Package Warning**: Warning dialog for package.yml files with "do not show again" option
 
 ### 🎯 Milestone 3: Advanced Features (v0.4.0)
 

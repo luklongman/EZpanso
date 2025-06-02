@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QTableWidget, QTableWidgetItem,
     QVBoxLayout, QWidget, QPushButton, QHBoxLayout, QComboBox,
     QMessageBox, QHeaderView, QLineEdit, QLabel, QDialog, QMenu,
-    QFileDialog
+    QFileDialog, QCheckBox
 )
 
 FileData = Dict[str, List[Dict[str, Any]]]  # file_path -> list of match dictionaries
@@ -38,6 +38,7 @@ class EZpanso(QMainWindow):
         self.display_name_to_path: Dict[str, str] = {}  # display name -> file path mapping
         self.active_file_path: Optional[str] = None
         self.is_modified = False
+        self.modified_files: set = set()  # Track which files have been modified
         
         # For sorting and filtering
         self.current_matches: List[Dict[str, Any]] = []  # Current file's matches
@@ -248,6 +249,11 @@ class EZpanso(QMainWindow):
         
         if not self.active_file_path:
             return
+        
+        # Show package warning if this is a package.yml file
+        if "(package)" in display_name.lower():
+            if not self._show_package_warning():
+                return  # User cancelled, don't proceed
             
         # Clear filter when switching files
         if hasattr(self, 'filter_box'):
@@ -522,6 +528,8 @@ class EZpanso(QMainWindow):
 
     def _mark_modified_and_refresh(self):
         """Mark the file as modified and refresh the UI."""
+        if self.active_file_path:
+            self.modified_files.add(self.active_file_path)
         self.is_modified = True
         self._update_title()
         if self.active_file_path:
@@ -551,13 +559,14 @@ class EZpanso(QMainWindow):
     
     def _save_all_with_confirmation(self):
         """Step 7: Save with confirmation, overwrite original YAML."""
-        if not self.is_modified:
+        if not self.is_modified or not self.modified_files:
             self._show_information("Info", "No changes to save.")
             return
         
+        modified_count = len(self.modified_files)
         reply = self._show_question(
             "Save Changes", 
-            f"Save changes to {len(self.files_data)} file(s)?\nThis will overwrite the original files.",
+            f"Save changes and Overwrite {modified_count} modified file(s)?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         
@@ -587,15 +596,20 @@ class EZpanso(QMainWindow):
             return False
 
     def _save_all_files(self):
-        """Direct overwrite of original YAML files."""
+        """Save only the modified YAML files."""
         saved_count = 0
         
-        for file_path, matches in self.files_data.items():
+        # Only save files that have been modified
+        for file_path in self.modified_files.copy():  # Use copy to avoid modification during iteration
+            matches = self.files_data.get(file_path, [])
             if self._save_single_file(file_path, matches):
                 saved_count += 1
+                self.modified_files.discard(file_path)  # Remove from modified set after successful save
         
         if saved_count > 0:
-            self.is_modified = False
+            # Only clear is_modified if no files remain modified
+            if not self.modified_files:
+                self.is_modified = False
             self._update_title()
             self._show_information("Saved", f"Successfully saved {saved_count} file(s).")
     
@@ -642,6 +656,8 @@ class EZpanso(QMainWindow):
         reminder_label = QLabel("💡 Type \\n for new lines, \\t for tabs. YAML special characters are handled automatically.")
         reminder_label.setStyleSheet("color: #666; font-size: 11px; padding: 5px;")
         reminder_label.setWordWrap(True)
+        reminder_label.setMinimumHeight(40)
+        reminder_label.setWordWrap(True)
         layout.addWidget(reminder_label)
         
         # Buttons
@@ -661,14 +677,19 @@ class EZpanso(QMainWindow):
         
         trigger_input.setFocus()
         
-        # Show dialog
-        if dialog.exec() == QDialog.DialogCode.Accepted:
+        # Keep dialog open until validation passes or user cancels
+        while True:
+            # Show dialog
+            if dialog.exec() != QDialog.DialogCode.Accepted:
+                return  # User cancelled
+            
             trigger = trigger_input.text().strip()
             replace = replace_input.text().strip()
             
+            # Validate input
             if not trigger or not replace:
                 self._show_warning("Invalid Input", "Both trigger and replace must be filled.")
-                return
+                continue  # Show dialog again
             
             # Process escape sequences in both trigger and replace
             trigger = self._process_escape_sequences(trigger)
@@ -677,21 +698,24 @@ class EZpanso(QMainWindow):
             # Check for duplicates using helper method
             if self._check_duplicate_trigger(trigger):
                 self._show_warning("Duplicate", f"Trigger '{trigger}' already exists.")
-                return
+                continue  # Show dialog again
             
-            # Save state before adding new snippet
-            self._save_state(f"Add snippet: '{trigger}'")
-            
-            # Format both trigger and replace values with proper YAML quoting for consistency
-            formatted_trigger = self._format_yaml_value(trigger)
-            formatted_replace = self._format_yaml_value(replace)
-            
-            # Add new snippet
-            new_snippet = {'trigger': formatted_trigger, 'replace': formatted_replace}
-            self.files_data[self.active_file_path].append(new_snippet)
-            
-            # Mark as modified and refresh
-            self._mark_modified_and_refresh()
+            # All validation passed, break out of loop
+            break
+        
+        # Save state before adding new snippet
+        self._save_state(f"Add snippet: '{trigger}'")
+        
+        # Format both trigger and replace values with proper YAML quoting for consistency
+        formatted_trigger = self._format_yaml_value(trigger)
+        formatted_replace = self._format_yaml_value(replace)
+        
+        # Add new snippet
+        new_snippet = {'trigger': formatted_trigger, 'replace': formatted_replace}
+        self.files_data[self.active_file_path].append(new_snippet)
+        
+        # Mark as modified and refresh
+        self._mark_modified_and_refresh()
 
     def _save_state(self, description: str):
         """Save current state to undo stack for operation tracking."""
@@ -716,7 +740,8 @@ class EZpanso(QMainWindow):
             'description': description,
             'file_path': self.active_file_path,
             'matches': [match.copy() for match in self.files_data[self.active_file_path]],
-            'is_modified': self.is_modified
+            'is_modified': self.is_modified,
+            'modified_files': self.modified_files.copy()
         }
     
     def _restore_state(self, state: Dict[str, Any]):
@@ -728,6 +753,7 @@ class EZpanso(QMainWindow):
         # Restore the data
         self.files_data[state['file_path']] = [match.copy() for match in state['matches']]
         self.is_modified = state['is_modified']
+        self.modified_files = state.get('modified_files', set()).copy()
         
         # Refresh UI
         self._refresh_current_view()
@@ -857,6 +883,8 @@ class EZpanso(QMainWindow):
             self.file_paths.clear()
             self.display_name_to_path.clear()
             self.active_file_path = None
+            self.is_modified = False
+            self.modified_files.clear()
             self.file_selector.clear()
             self.table.setRowCount(0)
             
@@ -897,6 +925,66 @@ class EZpanso(QMainWindow):
             
         msg_box.exec()
 
+    def _show_package_warning(self) -> bool:
+        """Show warning dialog for package.yml files. Returns True if user wants to proceed."""
+        # Check if user has opted out of this warning
+        show_warning = self.settings.value("show_package_warning", True, type=bool)
+        if not show_warning:
+            return True
+        
+        # Create custom dialog
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Package File Warning")
+        dialog.setModal(True)
+        dialog.resize(450, 200)
+        
+        # Set the app icon
+        if self.app_icon:
+            dialog.setWindowIcon(self.app_icon)
+        
+        layout = QVBoxLayout(dialog)
+        
+        # Warning icon and message
+        message_layout = QHBoxLayout()
+        
+        # Warning message
+        warning_text = QLabel(
+            "⚠️ <b>Package Files</b><br><br>"
+            "Editing Espanso packages is <b>not recommended</b> at this stage.<br>"
+            "File may not work properly due to formatting issues of advanced matches.<br><br>"
+            "Consider creating your own match files for experimentation."
+        )
+        warning_text.setWordWrap(True)
+        warning_text.setTextFormat(Qt.TextFormat.RichText)
+        warning_text.setStyleSheet("padding: 10px;")
+        
+        message_layout.addWidget(warning_text)
+        layout.addLayout(message_layout)
+        
+        # "Do not show again" checkbox
+        self.dont_show_checkbox = QCheckBox("Do not show this warning again")
+        layout.addWidget(self.dont_show_checkbox)
+        
+        # Button layout
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+        
+        ok_btn = QPushButton("OK")
+        ok_btn.clicked.connect(dialog.accept)
+        ok_btn.setDefault(True)
+        button_layout.addWidget(ok_btn)
+        
+        layout.addLayout(button_layout)
+        
+        # Show dialog and handle result
+        result = dialog.exec()
+        
+        # Save preference if user checked "do not show again"
+        if self.dont_show_checkbox.isChecked():
+            self.settings.setValue("show_package_warning", False)
+        
+        return result == QDialog.DialogCode.Accepted
+
 
 def main():
     """Main entry point."""
@@ -918,3 +1006,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    

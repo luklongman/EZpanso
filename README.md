@@ -1,11 +1,25 @@
 # EZpanso
+
 **Easy editor for Espanso**
 
-<img src="https://github.com/user-attachments/assets/171a0cfc-f1e6-4070-94a0-eb83ef7c1163" alt="icon_512x512@2x" width="15%" />
+<img src="https://github.com/user-attachments/assets/171a0cfc-f1e6-4070-94a0-eb83ef7c1163" alt="icon_512x512@2x" width="25%" />
 
-A minimal GUI app for managing your [Espanso](https://espanso.org/) text expansion matches. Built with PyYAML & PyQt6. Available across platforms.
+A minimal GUI app for managing your [Espanso](https://espanso.org/) text expansion matches, particularly useful for looking up and editing simple matches across YAML files. Built with PyYAML & PyQt6. Available across platforms.
 
-https://github.com/user-attachments/assets/47499f82-af35-42ba-9cab-21e8aa332cc5
+<https://github.com/user-attachments/assets/47499f82-af35-42ba-9cab-21e8aa332cc5>
+
+## 🆕 Update v1.1 (Jun 02, 2025)
+
+### 🍎 macOS Compatibility Fixed
+
+- **Universal Binary Support** - Fixed "application is not supported on this Mac" error by building universal binary for both Intel and Apple Silicon architectures
+- **Full macOS Support** - Now works on all Mac systems including older Intel Macs and new Apple Silicon Macs
+
+### 🐛 Bug Fixes
+
+- Fixed dialog workflow for creating new matches with validation errors
+- Improved file modification tracking for better save operations
+- Enhanced user experience when dealing with duplicate triggers or empty fields
 
 ## ✨ Features
 
@@ -17,6 +31,7 @@ https://github.com/user-attachments/assets/47499f82-af35-42ba-9cab-21e8aa332cc5
 - **🗑️ Delete** - Safe deletion with confirmation dialogs
 - **💾 Save** - Preserve original YAML structure and comments
 - **🛡️ Dynamic Match Protection** - Matches with variables or conditions are shown in gray and not editable
+- **⚠️ Package Safety** - Warning dialog when editing package files with option to disable
 - **🌍 Multi-platform** - Works on macOS, Linux, and Windows
 
 ### ⚡ Keyboard Shortcuts
@@ -25,7 +40,7 @@ https://github.com/user-attachments/assets/47499f82-af35-42ba-9cab-21e8aa332cc5
 - `Cmd+S` (macOS) / `Ctrl+S` - Save all changes  
 - `Cmd+F` (macOS) / `Ctrl+F` - Find matches
 - `Cmd+Z` (macOS) / `Ctrl+Z` - Undo
-- `Cmd+Shift+Z` (macOS) / `Ctrl+Y` - Redo
+- `Cmd+Shift+Z` (macOS) / `Ctrl+Y` - *Redo*
 - `Delete` / `Backspace` - Delete selected matches
 - `Cmd+O` (macOS) / `Ctrl+O` - Set folder
 
@@ -121,6 +136,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - [Espanso](https://espanso.org/) - The amazing text expander.
+- [EspansoEdit](https://ee.qqv.com.au/) - Windows Freeware editor and utility suite for Espanso by [EeAdmin](https://www.reddit.com/user/EeAdmin/), who provided valuable feedback upon inital release
 - [PyQt6](https://riverbankcomputing.com/software/pyqt/) - Python GUI framework
 - [PyYAML](https://pyyaml.org/) - For YAML handling
 
