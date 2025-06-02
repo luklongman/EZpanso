@@ -48,7 +48,7 @@ A minimal GUI app for managing your [Espanso](https://espanso.org/) text expansi
 
 ### macOS (Recommended)
 
-1. Download the latest `EZpanso-1.0.0.dmg` from [Releases](https://github.com/luklongman/EZpanso/releases)
+1. Download the latest `EZpanso-1.1.0.dmg` from [Releases](https://github.com/luklongman/EZpanso/releases)
 2. Open the DMG and drag EZpanso to Applications
 3. Launch EZpanso from Launchpad or Applications folder
 
