@@ -11,7 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 📂 **Open File Button** - Added "Open" button next to the dropdown list to open the current file for advanced editing in the system's default editor
 - ⌨️ **Open File Shortcut** - Added `Cmd+O` (macOS) / `Ctrl+O` keyboard shortcut to open current file for advanced editing
-
+  
+- 🏗️ **Separated build Intel and Apple Silicon**
+  
 ### Improved
 
 - 📝 **YAML Formatting** - Enhanced YAML output formatting to avoid unnecessary double quotes wrapping by default, resulting in cleaner and more readable YAML files

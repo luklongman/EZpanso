@@ -28,7 +28,8 @@ MANIFEST
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
-*.spec
+# Keep our custom spec files for building
+# *.spec
 
 # Installer logs
 pip-log.txt
@@ -129,10 +130,30 @@ cython_debug/
 # macOS
 .DS_Store
 
-# Release artifacts (keep local, don't commit)
+# Release artifacts (keep local, don't commit to main branch)
 *.dmg
 *.pkg
-*.app
+# Keep app bundles local only
+dist/
+# But allow .app in releases
+# *.app
 
 # Archives
 archives/
+
+# Development and testing
+test_output/
+temp/
+tmp/
+
+# IDE and editor files
+*.swp
+*.swo
+*~
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+
+# Logs
+*.log

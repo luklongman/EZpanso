@@ -120,7 +120,7 @@ Although there are confirmations for save and delete operations, it's highly rec
 
 ## 🏗️ Development
 
-### Building from Source
+### Quick Start
 
 ```bash
 git clone https://github.com/luklongman/EZpanso.git
@@ -129,13 +129,32 @@ poetry install
 
 # Run in development
 poetry run python main.py
+```
 
+### Building
+
+```bash
 # Build for current architecture (recommended for individual users)
 ./build_current_arch.sh
 
 # Build for both architectures (for maintainers/distribution)
 ./build_multi_arch.sh
 ```
+
+### Development Scripts
+
+```bash
+# Clean build artifacts
+python scripts/cleanup.py
+
+# Analyze build size
+python scripts/analyze_build.py
+
+# Run tests
+pytest test.py -v
+```
+
+For detailed development information, see [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ### Architecture
 
