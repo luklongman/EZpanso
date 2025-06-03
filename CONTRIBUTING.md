@@ -14,10 +14,12 @@ Thank you for your interest in contributing to EZpanso! This document provides g
 ## 🛠️ Development Setup
 
 ### Prerequisites
+
 - Python 3.11+
 - Poetry (recommended) or pip
 
 ### Setup
+
 ```bash
 git clone https://github.com/yourusername/EZpanso.git
 cd EZpanso
@@ -25,6 +27,7 @@ poetry install
 ```
 
 ### Running the App
+
 ```bash
 poetry run python main.py
 ```
@@ -32,12 +35,14 @@ poetry run python main.py
 ## 📝 Coding Guidelines
 
 ### Code Style
+
 - Follow [PEP 8](https://www.python.org/dev/peps/pep-0008/) style guidelines
 - Use meaningful variable and function names
 - Add docstrings for classes and functions
 - Keep functions small and focused
 
 ### Code Structure
+
 - Main application logic in `main.py`
 - Keep the single-file architecture for simplicity
 - Use Qt best practices for GUI components
@@ -45,7 +50,9 @@ poetry run python main.py
 ## 🧪 Testing
 
 ### Manual Testing
+
 Before submitting a PR, please test:
+
 - App startup and file loading
 - Creating, editing, and deleting snippets
 - Saving changes to YAML files
@@ -53,11 +60,13 @@ Before submitting a PR, please test:
 - Error handling
 
 ### Test Files
+
 If you add new features, consider adding test YAML files to verify functionality.
 
 ## 🐛 Bug Reports
 
 When reporting bugs, please include:
+
 - **Environment**: OS, Python version, PyQt6 version
 - **Steps to reproduce** the issue
 - **Expected behavior** vs actual behavior
@@ -67,6 +76,7 @@ When reporting bugs, please include:
 ## ✨ Feature Requests
 
 When requesting features:
+
 - Explain the **use case** and **problem** it solves
 - Provide **examples** of how it would work
 - Consider **backwards compatibility**
@@ -75,14 +85,17 @@ When requesting features:
 ## 📦 Platform-Specific Considerations
 
 ### macOS
+
 - Test app bundle creation with `./build_macos.sh`
 - Verify icon display and app signing
 
 ### Linux
+
 - Test with different desktop environments
 - Check file path handling
 
 ### Windows
+
 - Test path separators and encoding
 - Verify PyInstaller builds (when available)
 
@@ -99,16 +112,19 @@ When requesting features:
 We welcome contributions in these areas:
 
 ### High Priority
+
 - **Windows/Linux app bundling** - PyInstaller configs for other platforms
 - **Dark mode support** - UI theming system
 - **Unit tests** - Automated testing framework
 
 ### Medium Priority
+
 - **Snippet templates** - Predefined snippet categories
 - **Import/export** - Backup and restore functionality
 - **Performance optimizations** - Large file handling
 
 ### Low Priority
+
 - **Plugin system** - Extensibility for custom snippet types
 - **Localization** - Multi-language support
 - **Advanced search** - Regex and tag-based filtering

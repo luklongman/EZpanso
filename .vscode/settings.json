@@ -9,8 +9,7 @@
         "en"
     ],
     "spellright.documentTypes": [
-        "latex",
-        "plaintext"
+        "latex"
     ],
     "python.testing.unittestArgs": [
         "-v",

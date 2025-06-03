@@ -3,11 +3,13 @@
 ## 🏗️ Building
 
 ### Quick Build (Current Architecture)
+
 ```bash
 ./build_current_arch.sh
 ```
 
 ### Multi-Architecture Build (Distribution)
+
 ```bash
 ./build_multi_arch.sh
 ```
@@ -15,11 +17,13 @@
 ## 🧹 Development Scripts
 
 ### Cleanup Before Build
+
 ```bash
 python scripts/cleanup.py
 ```
 
 ### Analyze Build Size
+
 ```bash
 python scripts/analyze_build.py
 ```
@@ -27,11 +31,13 @@ python scripts/analyze_build.py
 ## 🧪 Testing
 
 ### Run Tests
+
 ```bash
 pytest test.py -v
 ```
 
 ### Manual Testing
+
 ```bash
 poetry run python main.py
 ```
