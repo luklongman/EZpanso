@@ -6,7 +6,7 @@
 
 A minimal GUI app for managing your [Espanso](https://espanso.org/) text expansion matches, particularly useful for looking up and editing simple matches across YAML files. Built with PyYAML & PyQt6. DMG available for MacOS. Python installation available across platforms.
 
-<https://github.com/user-attachments/assets/47499f82-af35-42ba-9cab-21e8aa332cc5>
+https://github.com/user-attachments/assets/774fa2c8-ad27-42ca-85c5-8342e2a99802
 
 ## 🆕 Update v1.2.0 (Jun 03, 2025)
 
