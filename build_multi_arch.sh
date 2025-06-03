@@ -46,7 +46,7 @@ create_dmg_for_arch() {
 
 # Run cleanup script first
 echo "🧹 Running project cleanup..."
-python3 cleanup.py
+python3 scripts/cleanup.py
 
 # Clean previous builds
 echo "🗑️  Ensuring clean build environment..."

@@ -1,6 +1,8 @@
 #!/bin/bash
 
-# EZpanso Build Script for macOS
+# EZpa# Run cleanup script first
+echo "🧹 Running project cleanup..."
+python scripts/cleanup.py Build Script for macOS
 # This script creates a distributable .app bundle and .dmg file
 
 set -e  # Exit on any error
