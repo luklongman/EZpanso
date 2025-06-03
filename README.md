@@ -9,14 +9,27 @@ DMG available for MacOS. Python installation available across platforms.
 
 <https://github.com/user-attachments/assets/47499f82-af35-42ba-9cab-21e8aa332cc5>
 
-## 🆕 Update v1.1 (Jun 02, 2025)
+## 🆕 Update v1.2.0 (Jun 03, 2025)
 
-### 🍎 macOS Compatibility Fixed
+### ✨ New Features
+
+- **📂 Open File Button** - Added "Open" button to open the current file for advanced editing in your system's default editor
+- **⌨️ Enhanced Shortcuts** - `Cmd+O` (macOS) / `Ctrl+O` opens current file for advanced editing
+- **🔄 Better UI** - Changed "New" button to "New match" for improved clarity
+
+### 🔧 Improvements
+
+- **📝 YAML Formatting** - Enhanced YAML output formatting to avoid unnecessary double quotes, resulting in cleaner and more readable files
+- **🔧 Unified Preferences** - Consolidated About, Settings, and Links into a single comprehensive Preferences dialog
+
+### 🍎 Previous Update v1.1 (Jun 02, 2025)
+
+#### macOS Compatibility Fixed
 
 - **Universal Binary Support** - Fixed "application is not supported on this Mac" error by building universal binary for both Intel and Apple Silicon architectures
 - **Full macOS Support** - Now works on all Mac systems including older Intel Macs and new Apple Silicon Macs
 
-### 🐛 Bug Fixes
+#### Bug Fixes
 
 - Fixed dialog workflow for creating new matches with validation errors
 - Improved file modification tracking for better save operations
@@ -43,15 +56,20 @@ DMG available for MacOS. Python installation available across platforms.
 - `Cmd+Z` (macOS) / `Ctrl+Z` - Undo
 - `Cmd+Shift+Z` (macOS) / `Ctrl+Y` - *Redo*
 - `Delete` / `Backspace` - Delete selected matches
-- `Cmd+O` (macOS) / `Ctrl+O` - Set folder
+- `Cmd+O` (macOS) / `Ctrl+O` - Open current file for advanced editing
 
 ## 📥 Installation
 
 ### macOS (Recommended)
 
-1. Download the latest `EZpanso-1.1.0.dmg` from [Releases](https://github.com/luklongman/EZpanso/releases)
+1. Download the appropriate installer for your Mac:
+   - **Intel Macs**: Download `EZpanso-1.2.0-Intel.dmg`
+   - **Apple Silicon Macs**: Download `EZpanso-1.2.0-AppleSilicon.dmg`
+   - Available from [Releases](https://github.com/luklongman/EZpanso/releases)
 2. Open the DMG and drag EZpanso to Applications
 3. Launch EZpanso from Launchpad or Applications folder
+
+> **Note**: Both versions install as "EZpanso.app" but are optimized for their respective architectures. The architecture is shown in the app's Preferences dialog.
 
 ### Cross-Platform (Python)
 
@@ -114,8 +132,11 @@ poetry install
 # Run in development
 poetry run python main.py
 
-# Build macOS app
-./build_macos.sh
+# Build for current architecture (recommended for individual users)
+./build_current_arch.sh
+
+# Build for both architectures (for maintainers/distribution)
+./build_multi_arch.sh
 ```
 
 ### Architecture

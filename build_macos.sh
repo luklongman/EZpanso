@@ -5,19 +5,33 @@
 
 set -e  # Exit on any error
 
-echo "🚀 Building EZpanso for macOS..."
+# Detect architecture
+ARCH=$(uname -m)
+if [ "$ARCH" = "arm64" ]; then
+    ARCH_NAME="AppleSilicon"
+    SPEC_FILE="EZpanso-arm64.spec"
+else
+    ARCH_NAME="Intel"
+    SPEC_FILE="EZpanso-intel.spec"
+fi
 
-# Clean previous builds
-echo "🧹 Cleaning previous builds..."
+echo "🚀 Building EZpanso for macOS ($ARCH_NAME)..."
+
+# Run cleanup script first
+echo "🧹 Running project cleanup..."
+python3 cleanup.py
+
+# Clean previous builds (redundant after cleanup but ensures clean slate)
+echo "🗑️  Ensuring clean build environment..."
 rm -rf build/ dist/ *.dmg
 
-# Install dependencies
-echo "📦 Installing dependencies..."
-poetry install
+# Install dependencies (production only for smaller build)
+echo "📦 Installing production dependencies..."
+poetry install --only=main
 
-# Build the app using PyInstaller
-echo "🔨 Building app bundle..."
-poetry run pyinstaller EZpanso.spec --clean
+# Build the app using PyInstaller with architecture-specific spec
+echo "🔨 Building optimized app bundle for $ARCH_NAME..."
+poetry run pyinstaller $SPEC_FILE --clean
 
 # Check if build was successful
 if [ ! -d "dist/EZpanso.app" ]; then
@@ -27,9 +41,17 @@ fi
 
 echo "✅ App bundle created successfully!"
 
+# Show final build size
+echo "📊 Build size analysis:"
+echo "   App bundle: $(du -sh dist/EZpanso.app | cut -f1)"
+echo "   Executable: $(du -sh dist/EZpanso | cut -f1)"
+
+# For DMG creation, use architecture in filename
+DMG_NAME="EZpanso-1.2.0-$ARCH_NAME.dmg"
+
 # Create DMG (optional, requires create-dmg)
 if command -v create-dmg &> /dev/null; then
-    echo "📦 Creating DMG installer..."
+    echo "📦 Creating DMG installer for $ARCH_NAME..."
     
     # Create temporary folder for DMG contents
     mkdir -p dmg_temp
@@ -46,13 +68,13 @@ if command -v create-dmg &> /dev/null; then
         --hide-extension "EZpanso.app" \
         --app-drop-link 600 185 \
         --format UDZO \
-        "EZpanso-1.1.0.dmg" \
+        "$DMG_NAME" \
         "dmg_temp/"
     
     # Clean up
     rm -rf dmg_temp/
     
-    echo "✅ DMG created: EZpanso-1.1.0.dmg"
+    echo "✅ DMG created: $DMG_NAME"
 else
     echo "⚠️  create-dmg not found. Skipping DMG creation."
     echo "   Install with: brew install create-dmg"

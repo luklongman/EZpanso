@@ -23,10 +23,62 @@ class EZpanso(QMainWindow):
         
         # Set window icon
         self.app_icon = None
-        icon_path = os.path.join(os.path.dirname(__file__), 'icon.iconset', 'icon_512x512.png')
+        icon_path = os.path.join(os.path.dirname(__file__), 'icon_512x512.png')
         if os.path.exists(icon_path):
             self.app_icon = QIcon(icon_path)
             self.setWindowIcon(self.app_icon)
+        
+        # Define unified minimal styles
+        self.button_style = """
+            QPushButton {
+                padding: 4px 8px;
+                font-size: 11px;
+                border: 1px solid #ddd;
+                border-radius: 2px;
+                background-color: white;
+                color: #333;
+                min-width: 60px;
+            }
+            QPushButton:hover {
+                border-color: #999;
+                background-color: #f8f8f8;
+            }
+            QPushButton:pressed {
+                background-color: #eee;
+            }
+        """
+        
+        self.primary_button_style = """
+            QPushButton {
+                padding: 4px 8px;
+                font-size: 11px;
+                border: 1px solid #007acc;
+                border-radius: 2px;
+                background-color: #007acc;
+                color: white;
+                min-width: 60px;
+            }
+            QPushButton:hover {
+                background-color: #005c99;
+                border-color: #005c99;
+            }
+            QPushButton:pressed {
+                background-color: #004080;
+            }
+        """
+        
+        self.input_style = """
+            QLineEdit {
+                padding: 4px;
+                border: 1px solid #ddd;
+                border-radius: 2px;
+                font-size: 11px;
+                background-color: white;
+            }
+            QLineEdit:focus {
+                border-color: #007acc;
+            }
+        """
         
         # Settings for persistence
         self.settings = QSettings("EZpanso", "EZpanso")
@@ -79,17 +131,29 @@ class EZpanso(QMainWindow):
         self.setCentralWidget(central)
         layout = QVBoxLayout(central)
         
-        # File selector dropdown
+        # File selector dropdown with proportional layout: 25% Find, 50% Dropdown, 25% Open
         file_layout = QHBoxLayout()
-        self.file_selector = QComboBox()
-        self.file_selector.currentTextChanged.connect(self._on_file_selected)
-        file_layout.addWidget(self.file_selector)
         
         self.filter_box = QLineEdit()
         self.filter_box.setPlaceholderText("Filter...")
-        self.filter_box.setMaximumWidth(200)
+        self.filter_box.setStyleSheet(self.input_style)
         self.filter_box.textChanged.connect(self._apply_filter)
-        file_layout.addWidget(self.filter_box)
+        file_layout.addWidget(self.filter_box, 1)  # 25% proportion
+        
+        self.file_selector = QComboBox()
+        self.file_selector.currentTextChanged.connect(self._on_file_selected)
+        file_layout.addWidget(self.file_selector, 2)  # 50% proportion
+        
+        # Get platform-specific shortcut string for Open button
+        if sys.platform == 'darwin':  # macOS
+            open_key = "⌘O"
+        else:  # Windows/Linux/Unix
+            open_key = "Ctrl+O"
+        
+        open_btn = QPushButton(f"Open ({open_key})")
+        open_btn.setStyleSheet(self.button_style)
+        open_btn.clicked.connect(self._open_current_file)
+        file_layout.addWidget(open_btn, 1)  # 25% proportion
         
         layout.addLayout(file_layout)
         
@@ -138,45 +202,54 @@ class EZpanso(QMainWindow):
         # Bottom button layout: New (left) and Save (right)
         bottom_btn_layout = QHBoxLayout()
         
-        new_btn = QPushButton(f"New ({new_key})")
+        new_btn = QPushButton(f"New match ({new_key})")
+        new_btn.setStyleSheet(self.button_style)
         new_btn.clicked.connect(self._add_new_snippet)
         bottom_btn_layout.addWidget(new_btn)
         
         bottom_btn_layout.addStretch()
         
-        save_btn = QPushButton(f"Save ({save_key})")
-        save_btn.clicked.connect(self._save_all_with_confirmation)
-        bottom_btn_layout.addWidget(save_btn)
+        self.save_btn = QPushButton(f"Save ({save_key})")
+        self.save_btn.setStyleSheet(self.primary_button_style)
+        self.save_btn.clicked.connect(self._save_all_with_confirmation)
+        self._update_save_button_state()  # Set initial state
+        bottom_btn_layout.addWidget(self.save_btn)
         
         layout.addLayout(bottom_btn_layout)
         
     def _setup_menubar(self):
-        """Setup the application menubar with all items under EZpanso menu."""
+        """Setup the application menubar with all items under the main application menu."""
         menubar = self.menuBar()
         if not menubar:
             return
         
-        # Single EZpanso menu for simplicity
-        ezpanso_menu = menubar.addMenu("EZpanso")
-        if ezpanso_menu:
-            # Set Folder action
-            set_folder_action = ezpanso_menu.addAction("Set Folder...")
-            if set_folder_action:
-                set_folder_action.setShortcut(QKeySequence.StandardKey.Open)
-                set_folder_action.triggered.connect(self._set_custom_folder)
+        # On macOS, use the application menu (first menu). On other platforms, create EZpanso menu.
+        if sys.platform == 'darwin':  # macOS
+            # Get the application menu (automatically created by Qt)
+            app_menu = None
+            for action in menubar.actions():
+                menu = action.menu()
+                if menu:
+                    app_menu = menu
+                    break
             
-            # Separator
-            ezpanso_menu.addSeparator()
+            # If no application menu exists, create one
+            if not app_menu:
+                app_menu = menubar.addMenu("EZpanso")
+        else:
+            # On Windows/Linux, create a regular EZpanso menu
+            app_menu = menubar.addMenu("EZpanso")
+        
+        if app_menu:
+            # Add a separator before our custom items (on macOS this separates from default items)
+            if sys.platform == 'darwin':
+                app_menu.addSeparator()
             
-            # Visit Espanso Hub action
-            visit_hub_action = ezpanso_menu.addAction("Visit Espanso Hub")
-            if visit_hub_action:
-                visit_hub_action.triggered.connect(self._visit_espanso_hub)
-            
-            # About action
-            about_action = ezpanso_menu.addAction("About EZpanso")
-            if about_action:
-                about_action.triggered.connect(self._show_about_dialog)
+            # Preferences action (includes About, Settings, and Links)
+            preferences_action = app_menu.addAction("Preferences...")
+            if preferences_action:
+                preferences_action.setShortcut(QKeySequence.StandardKey.Preferences)
+                preferences_action.triggered.connect(self._show_preferences_dialog)
         
     def _load_all_yaml_files(self):
         """Step 1: safe_load all YAML files under match folder."""
@@ -190,7 +263,7 @@ class EZpanso(QMainWindow):
                 espanso_dir = os.path.expanduser("~/.config/espanso/match")
         
         if not os.path.isdir(espanso_dir):
-            self._show_warning("Error", "Could not find Espanso match directory. Use File > Set Folder to select one.")
+            self._show_warning("Missing Directory", "Could not find Espanso match directory.\nUse File > Set Folder to select one.")
             return
             
         # Walk through all files including subfolders
@@ -395,9 +468,9 @@ class EZpanso(QMainWindow):
         # Confirm deletion if requested
         if show_confirmation:
             if len(triggers_to_delete) == 1:
-                message = f"Delete match '{triggers_to_delete[0]}'?"
+                message = f"Delete match '{triggers_to_delete[0]}'?\nThis action cannot be undone."
             else:
-                message = f"Delete {len(triggers_to_delete)} matches?"
+                message = f"Delete {len(triggers_to_delete)} matches?\nThis action cannot be undone."
 
             reply = self._show_question("Delete Matches", message,
                                       QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
@@ -532,6 +605,7 @@ class EZpanso(QMainWindow):
             self.modified_files.add(self.active_file_path)
         self.is_modified = True
         self._update_title()
+        self._update_save_button_state()
         if self.active_file_path:
             matches = self.files_data.get(self.active_file_path, [])
             self._populate_table(matches)
@@ -543,7 +617,7 @@ class EZpanso(QMainWindow):
         
         # Check for duplicates if editing trigger
         if is_trigger and self._check_duplicate_trigger(new_value, target_index):
-            self._show_warning("Duplicate", f"Trigger '{new_value}' already exists!")
+            self._show_warning("Duplicate Trigger", f"Trigger '{new_value}' already exists!\nPlease choose a different trigger.")
             # Revert to original value
             original_value = str(target_match.get(field, ''))
             item.setText(self._get_display_value(original_value))
@@ -560,13 +634,13 @@ class EZpanso(QMainWindow):
     def _save_all_with_confirmation(self):
         """Step 7: Save with confirmation, overwrite original YAML."""
         if not self.is_modified or not self.modified_files:
-            self._show_information("Info", "No changes to save.")
+            self._show_information("No Changes", "No changes to save.\nAll files are already up to date.")
             return
         
         modified_count = len(self.modified_files)
         reply = self._show_question(
             "Save Changes", 
-            f"Save changes and Overwrite {modified_count} modified file(s)?",
+            f"Save changes and overwrite {modified_count} modified file(s)?\nThis will update the YAML files on disk.",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         
@@ -585,14 +659,14 @@ class EZpanso(QMainWindow):
             # Update matches section
             existing_content['matches'] = matches
             
-            # Write back with double quotes as default style
+            # Write back with clean YAML formatting
             with open(file_path, 'w', encoding='utf-8') as f:
-                yaml.dump(existing_content, f, sort_keys=False, allow_unicode=True, default_style='"')
+                yaml.dump(existing_content, f, sort_keys=False, allow_unicode=True, default_style=None)
             
             return True
             
         except Exception as e:
-            self._show_critical("Save Error", f"Error saving {file_path}:\n{e}")
+            self._show_critical("Save Error", f"Error saving file:\n{e}")
             return False
 
     def _save_all_files(self):
@@ -611,7 +685,8 @@ class EZpanso(QMainWindow):
             if not self.modified_files:
                 self.is_modified = False
             self._update_title()
-            self._show_information("Saved", f"Successfully saved {saved_count} file(s).")
+            self._update_save_button_state()
+            self._show_information("Files Saved", f"Successfully saved {saved_count} file(s).\nAll changes have been written to disk.")
     
     def _update_title(self):
         """Update window title with modification indicator."""
@@ -621,54 +696,65 @@ class EZpanso(QMainWindow):
     def _add_new_snippet(self):
         """Add a new snippet via dialog."""
         if not self.active_file_path:
-            self._show_information("No File", "Please select a file first.")
+            self._show_information("No File Selected", "Please select a file first.\nChoose a file from the dropdown menu.")
             return
         
-        # Simple input dialog
+        # Simple input dialog with clean styling
         dialog = QDialog(self)
         dialog.setWindowTitle("New Match")
         dialog.setModal(True)
-        dialog.resize(400, 160)  # Increased height for reminder
+        dialog.resize(350, 160)
+        
+        # Set the app icon
+        if self.app_icon:
+            dialog.setWindowIcon(self.app_icon)
         
         layout = QVBoxLayout(dialog)
+        layout.setSpacing(12)
+        layout.setContentsMargins(15, 15, 15, 15)
         
         # Trigger input
         trigger_layout = QHBoxLayout()
+        trigger_layout.setSpacing(8)
         label = QLabel("Trigger:")
-        label.setMinimumWidth(60)  # Set fixed width for labels
+        label.setMinimumWidth(60)
+        label.setStyleSheet("font-weight: bold; color: #333; font-size: 11px;")
         trigger_layout.addWidget(label)
         trigger_input = QLineEdit()
         trigger_input.setPlaceholderText(":email")
+        trigger_input.setStyleSheet(self.input_style)
         trigger_layout.addWidget(trigger_input)
         layout.addLayout(trigger_layout)
         
         # Replace input
         replace_layout = QHBoxLayout()
+        replace_layout.setSpacing(8)
         label = QLabel("Replace:")
-        label.setMinimumWidth(60)  # Same fixed width for consistency
+        label.setMinimumWidth(60)
+        label.setStyleSheet("font-weight: bold; color: #333; font-size: 11px;")
         replace_layout.addWidget(label)
         replace_input = QLineEdit()
         replace_input.setPlaceholderText("johnny@water.com")
+        replace_input.setStyleSheet(self.input_style)
         replace_layout.addWidget(replace_input)
         layout.addLayout(replace_layout)
         
-        # Reminder about special characters
-        reminder_label = QLabel("💡 Type \\n for new lines, \\t for tabs. YAML special characters are handled automatically.")
-        reminder_label.setStyleSheet("color: #666; font-size: 11px; padding: 5px;")
-        reminder_label.setWordWrap(True)
-        reminder_label.setMinimumHeight(40)
-        reminder_label.setWordWrap(True)
-        layout.addWidget(reminder_label)
+        # Tip
+        tip_label = QLabel("Tip: Type \\n for new lines, \\t for tabs")
+        tip_label.setStyleSheet("color: #666; font-size: 10px; margin: 5px 0;")
+        layout.addWidget(tip_label)
         
         # Buttons
         button_layout = QHBoxLayout()
         button_layout.addStretch()
         
         cancel_btn = QPushButton("Cancel")
+        cancel_btn.setStyleSheet(self.button_style)
         cancel_btn.clicked.connect(dialog.reject)
         button_layout.addWidget(cancel_btn)
         
         add_btn = QPushButton("Add")
+        add_btn.setStyleSheet(self.primary_button_style)
         add_btn.clicked.connect(dialog.accept)
         add_btn.setDefault(True)
         button_layout.addWidget(add_btn)
@@ -688,7 +774,7 @@ class EZpanso(QMainWindow):
             
             # Validate input
             if not trigger or not replace:
-                self._show_warning("Invalid Input", "Both trigger and replace must be filled.")
+                self._show_warning("Missing Input", "Both trigger and replace must be filled.\nPlease complete both fields.")
                 continue  # Show dialog again
             
             # Process escape sequences in both trigger and replace
@@ -697,7 +783,7 @@ class EZpanso(QMainWindow):
             
             # Check for duplicates using helper method
             if self._check_duplicate_trigger(trigger):
-                self._show_warning("Duplicate", f"Trigger '{trigger}' already exists.")
+                self._show_warning("Duplicate Trigger", f"Trigger '{trigger}' already exists.\nPlease choose a different trigger.")
                 continue  # Show dialog again
             
             # All validation passed, break out of loop
@@ -768,6 +854,7 @@ class EZpanso(QMainWindow):
     def _refresh_current_view(self):
         """Refresh the current UI view."""
         self._update_title()
+        self._update_save_button_state()
         if self.active_file_path:
             self._populate_table(self.files_data[self.active_file_path])
 
@@ -802,9 +889,9 @@ class EZpanso(QMainWindow):
         self._restore_state(state)
     
     def _create_message_box(self, icon_type, title, text, buttons=QMessageBox.StandardButton.Ok):
-        """Create a message box with the app icon."""
+        """Create a message box with consistent styling and no icons."""
         msg_box = QMessageBox(self)
-        msg_box.setIcon(icon_type)
+        msg_box.setIcon(QMessageBox.Icon.NoIcon)  # Remove icons from all dialogs
         msg_box.setWindowTitle(title)
         msg_box.setText(text)
         msg_box.setStandardButtons(buttons)
@@ -812,6 +899,48 @@ class EZpanso(QMainWindow):
         # Set the app icon (works best with PNG format)
         if self.app_icon:
             msg_box.setWindowIcon(self.app_icon)
+        
+        # Enhanced styling with consistent button appearance and transparent backgrounds
+        msg_box.setStyleSheet("""
+            QMessageBox {
+                border: 1px solid #ccc;
+                min-width: 300px;
+            }
+            QMessageBox QLabel {
+                color: #333;
+                font-size: 12px;
+                padding: 15px;
+                line-height: 1.5;
+                margin: 5px;
+            }
+            QMessageBox QPushButton {
+                padding: 4px 8px;
+                font-size: 11px;
+                border: 1px solid #ddd;
+                border-radius: 2px;
+                color: #333;
+                min-width: 60px;
+                margin: 2px;
+            }
+            QMessageBox QPushButton:hover {
+                border-color: #999;
+            }
+            QMessageBox QPushButton:pressed {
+                border-color: #666;
+            }
+            QMessageBox QPushButton:default {
+                border: 1px solid #007acc;
+                background-color: #007acc;
+                color: white;
+            }
+            QMessageBox QPushButton:default:hover {
+                background-color: #005c99;
+                border-color: #005c99;
+            }
+            QMessageBox QPushButton:default:pressed {
+                background-color: #004080;
+            }
+        """)
         
         return msg_box
     
@@ -836,7 +965,7 @@ class EZpanso(QMainWindow):
         if self.is_modified:
             reply = self._show_question(
                 "Unsaved Changes",
-                "You have unsaved changes. Do you want to save before closing?",
+                "You have unsaved changes.\nDo you want to save before closing?",
                 QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel
             )
             
@@ -856,6 +985,7 @@ class EZpanso(QMainWindow):
             (QKeySequence.StandardKey.New, self._add_new_snippet),
             (QKeySequence.StandardKey.Save, self._save_all_with_confirmation),
             (QKeySequence.StandardKey.Find, self._focus_filter),
+            (QKeySequence.StandardKey.Open, self._open_current_file),
             (QKeySequence(Qt.Key.Key_Delete), self._delete_selected_snippets),
             (QKeySequence(Qt.Key.Key_Backspace), self._delete_selected_snippets),
             (QKeySequence.StandardKey.Undo, self._undo),
@@ -866,10 +996,95 @@ class EZpanso(QMainWindow):
             shortcut = QShortcut(key_sequence, self)
             shortcut.activated.connect(callback)
             
-    def _set_custom_folder(self):
-        """Open a folder dialog to set custom Espanso match directory."""
+    def _show_preferences_dialog(self):
+        """Show the Preferences dialog with About, Settings, and Links in one view."""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Preferences")
+        dialog.setModal(True)
+        dialog.setFixedWidth(400)  # Set width only, let content determine height
+
+        # Set the app icon
+        if self.app_icon:
+            dialog.setWindowIcon(self.app_icon)
+        
+        layout = QVBoxLayout(dialog)
+        layout.setSpacing(15)
+        layout.setContentsMargins(20, 20, 20, 20)
+        
+        # Get version and current year
+        version = getattr(self, 'app_version', '1.2.0')
+        current_year = __import__('datetime').datetime.now().year
+        
+        # Settings Section
+        current_folder_label = QLabel("Espanso Match Folder Directory:")
+        current_folder_label.setStyleSheet("font-weight: bold; font-size: 11px; color: #333;")
+        layout.addWidget(current_folder_label)
+        
+        # Create horizontal layout for text field and button
+        folder_input_layout = QHBoxLayout()
+        folder_input_layout.setSpacing(8)
+        
+        current_folder_input = QLineEdit(self.custom_espanso_dir or "")
+        current_folder_input.setPlaceholderText("Auto-detected if empty")
+        current_folder_input.setStyleSheet(self.input_style)
+        folder_input_layout.addWidget(current_folder_input, 1)
+        
+        # Change folder button
+        change_folder_btn = QPushButton("Browse...")
+        change_folder_btn.setStyleSheet(self.button_style)
+        change_folder_btn.clicked.connect(lambda: self._change_folder_from_preferences(dialog, current_folder_input))
+        folder_input_layout.addWidget(change_folder_btn)
+        
+        layout.addLayout(folder_input_layout)
+        
+        # Add spacing
+        layout.addSpacing(15)
+        
+        # About Section - get platform info
+        import platform
+        arch = platform.machine()
+        arch_display = "Apple Silicon" if arch == "arm64" else "Intel" if arch == "x86_64" else arch
+        
+        about_content = QLabel(f"""EZpanso v{version} ({arch_display})
+ Easy editor for Espanso © {current_year} by Longman""")
+        about_content.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        about_content.setStyleSheet("color: #666; font-size: 11px; line-height: 1.4;")
+        layout.addWidget(about_content)
+        
+        # Add stretch before buttons
+        layout.addStretch()
+        layout.addSpacing(15)
+        # Buttons with links
+        button_layout = QHBoxLayout()
+        
+        # Create link buttons
+        links = [
+            ("Espanso Hub", "https://hub.espanso.org/"),
+            ("EZpanso GitHub", "https://github.com/luklongman/EZpanso")
+        ]
+        
+        for title, url in links:
+            link_btn = QPushButton(title)
+            link_btn.setStyleSheet(self.button_style)
+            link_btn.clicked.connect(lambda checked, u=url: QDesktopServices.openUrl(QUrl(u)))
+            button_layout.addWidget(link_btn)
+        
+        button_layout.addStretch()
+        
+        close_btn = QPushButton("Close")
+        close_btn.setStyleSheet(self.primary_button_style)
+        close_btn.clicked.connect(dialog.accept)
+        close_btn.setDefault(True)
+        button_layout.addWidget(close_btn)
+        
+        layout.addLayout(button_layout)
+        
+        dialog.exec()
+    
+    def _change_folder_from_preferences(self, parent_dialog, folder_input):
+        """Change folder from within preferences dialog."""
         folder = QFileDialog.getExistingDirectory(
-            self, 
+            parent_dialog,
             "Select Espanso Match Directory",
             self.custom_espanso_dir or os.path.expanduser("~")
         )
@@ -877,6 +1092,9 @@ class EZpanso(QMainWindow):
         if folder:
             self.custom_espanso_dir = folder
             self.settings.setValue("espanso_dir", folder)
+            
+            # Update the text field in the preferences dialog
+            folder_input.setText(folder)
             
             # Reload files from new directory
             self.files_data.clear()
@@ -889,41 +1107,8 @@ class EZpanso(QMainWindow):
             self.table.setRowCount(0)
             
             self._load_all_yaml_files()
-            QMessageBox.information(self, "Folder Set", f"Espanso directory set to:\n{folder}")
-    
-    def _visit_espanso_hub(self):
-        """Open the Espanso Hub website in the default browser."""
-        QDesktopServices.openUrl(QUrl("https://hub.espanso.org/"))
-    
-    def _show_about_dialog(self):
-        """Show the About dialog with application information."""
-        about_text = """
-        <h2>EZpanso</h2>
-        <p>Managing Espanso matches made even easier.</p>
-        <p>Workflow</p>
-        <li>📂 Open match files and packages</li>
-        <li>🔍 Find, Sort, Create and Delete matches</li>
-        <li>✏️ In-place Edit for non-dynamic matches</li>
-        <li>💾 Save and Done</li>
-        <p>Features (v1.0)</p>
-        <li>✅ Keyboard shortcuts</li>
-        <li>✅ Multi-line replacement</li>
-        <li>✅ Undo and Redo</li>
-        <li></li>
-        <p><a href="https://github.com/luklongman/EZpanso">EZpanso</a> by <a href="https://www.instagram.com/l.ongman">Longman</a> (June 2025)</p>
-        """
-        
-        msg_box = QMessageBox(self)
-        msg_box.setWindowTitle("About EZpanso")
-        msg_box.setText(about_text)
-        msg_box.setTextFormat(Qt.TextFormat.RichText)
-        
-        if self.app_icon:
-            msg_box.setIconPixmap(self.app_icon.pixmap(64, 64))
-        else:
-            msg_box.setIcon(QMessageBox.Icon.Information)
-            
-        msg_box.exec()
+            self._update_save_button_state()
+            self._show_information("Folder Changed", f"Espanso match folder updated successfully.\nNow using: {folder}")
 
     def _show_package_warning(self) -> bool:
         """Show warning dialog for package.yml files. Returns True if user wants to proceed."""
@@ -936,40 +1121,100 @@ class EZpanso(QMainWindow):
         dialog = QDialog(self)
         dialog.setWindowTitle("Package File Warning")
         dialog.setModal(True)
-        dialog.resize(450, 200)
+        dialog.resize(480, 250)  # Slightly larger for better readability
         
         # Set the app icon
         if self.app_icon:
             dialog.setWindowIcon(self.app_icon)
         
         layout = QVBoxLayout(dialog)
+        layout.setSpacing(20)
+        layout.setContentsMargins(25, 25, 25, 25)
         
         # Warning icon and message
         message_layout = QHBoxLayout()
+        message_layout.setSpacing(15)
+        
+        # Warning icon
+        icon_label = QLabel("⚠️")
+        icon_label.setStyleSheet("font-size: 32px; color: #ff9500;")
+        icon_label.setAlignment(Qt.AlignmentFlag.AlignTop)
+        message_layout.addWidget(icon_label)
         
         # Warning message
         warning_text = QLabel(
-            "⚠️ <b>Package Files</b><br><br>"
+            "<b style='font-size: 16px; color: #333;'>Package Files</b><br><br>"
+            "<span style='color: #666; line-height: 1.4;'>"
             "Editing Espanso packages is <b>not recommended</b> at this stage.<br>"
-            "File may not work properly due to formatting issues of advanced matches.<br><br>"
+            "Files may not work properly due to formatting issues with advanced matches.<br><br>"
             "Consider creating your own match files for experimentation."
+            "</span>"
         )
         warning_text.setWordWrap(True)
         warning_text.setTextFormat(Qt.TextFormat.RichText)
-        warning_text.setStyleSheet("padding: 10px;")
+        warning_text.setStyleSheet("""
+            QLabel {
+                padding: 15px;
+                background-color: #fff3cd;
+                border: 1px solid #ffeaa7;
+                border-radius: 6px;
+                line-height: 1.6;
+            }
+        """)
+        message_layout.addWidget(warning_text, 1)
         
-        message_layout.addWidget(warning_text)
         layout.addLayout(message_layout)
         
         # "Do not show again" checkbox
         self.dont_show_checkbox = QCheckBox("Do not show this warning again")
+        self.dont_show_checkbox.setStyleSheet("""
+            QCheckBox {
+                font-size: 12px;
+                color: #666;
+                padding: 5px;
+            }
+            QCheckBox::indicator {
+                width: 16px;
+                height: 16px;
+            }
+            QCheckBox::indicator:unchecked {
+                border: 1px solid #ccc;
+                border-radius: 3px;
+                background-color: white;
+            }
+            QCheckBox::indicator:checked {
+                border: 1px solid #007acc;
+                border-radius: 3px;
+                background-color: #007acc;
+                image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEzLjg1IDQuMTVMMTAuNSA3LjVMNy4xNSA0LjE1TDguNSAyLjhMMTAuNSA0LjhMMTIuNSAyLjhMMTMuODUgNC4xNVoiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPg==);
+            }
+        """)
         layout.addWidget(self.dont_show_checkbox)
         
         # Button layout
         button_layout = QHBoxLayout()
         button_layout.addStretch()
         
-        ok_btn = QPushButton("OK")
+        ok_btn = QPushButton("Continue")
+        ok_btn.setStyleSheet("""
+            QPushButton {
+                padding: 10px 20px;
+                font-size: 12px;
+                font-weight: bold;
+                border: 1px solid #ff9500;
+                border-radius: 4px;
+                background-color: #ff9500; 
+                color: white;
+                min-width: 100px;
+            }
+            QPushButton:hover {
+                background-color: #e6840e;
+                border-color: #e6840e;
+            }
+            QPushButton:pressed {
+                background-color: #cc7300;
+            }
+        """)
         ok_btn.clicked.connect(dialog.accept)
         ok_btn.setDefault(True)
         button_layout.addWidget(ok_btn)
@@ -985,7 +1230,78 @@ class EZpanso(QMainWindow):
         
         return result == QDialog.DialogCode.Accepted
 
+    def _open_current_file(self):
+        """Open the currently selected YAML file in the system's default editor."""
+        if not self.active_file_path:
+            self._show_information("No File Selected", "Please select a file first.\nChoose a file from the dropdown menu.")
+            return
+        
+        if not os.path.exists(self.active_file_path):
+            self._show_warning("File Not Found", f"The selected file no longer exists.\nPath: {self.active_file_path}")
+            return
+        
+        try:
+            # Use QDesktopServices to open file with default application
+            file_url = QUrl.fromLocalFile(self.active_file_path)
+            QDesktopServices.openUrl(file_url)
+        except Exception as e:
+            self._show_critical("Open Error", f"Could not open file with default application.\nError: {e}")
 
+    def _update_save_button_state(self):
+        """Update save button enabled/disabled state based on unsaved changes."""
+        if hasattr(self, 'save_btn'):
+            has_changes = self.is_modified and bool(self.modified_files)
+            self.save_btn.setEnabled(has_changes)
+            
+            # Update button style to show grayed out state
+            if has_changes:
+                self.save_btn.setStyleSheet(self.primary_button_style)
+            else:
+                gray_style = """
+                    QPushButton {
+                        padding: 4px 8px;
+                        font-size: 11px;
+                        border: 1px solid #ccc;
+                        border-radius: 2px;
+                        background-color: #f5f5f5;
+                        color: #999;
+                        min-width: 60px;
+                    }
+                """
+                self.save_btn.setStyleSheet(gray_style)
+
+    def _check_unsaved_changes_before_switch(self, target_display_name: str) -> bool:
+        """Check for unsaved changes before switching files. Returns True if switch should proceed."""
+        if not self.is_modified or not self.modified_files:
+            return True
+        
+        # Ask user what to do with unsaved changes
+        reply = self._show_question(
+            "Unsaved Changes",
+            "You have unsaved changes.\nSave before switching files?",
+            QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel
+        )
+        
+        if reply == QMessageBox.StandardButton.Save:
+            self._save_all_files()
+            return True
+        elif reply == QMessageBox.StandardButton.Discard:
+            # Reset modification state
+            self.is_modified = False
+            self.modified_files.clear()
+            self._update_save_button_state()
+            return True
+        else:  # Cancel
+            # Revert the combo box selection
+            if self.active_file_path:
+                for display_name, path in self.display_name_to_path.items():
+                    if path == self.active_file_path:
+                        self.file_selector.blockSignals(True)
+                        self.file_selector.setCurrentText(display_name)
+                        self.file_selector.blockSignals(False)
+                        break
+            return False
+    
 def main():
     """Main entry point."""
     app = QApplication(sys.argv)
@@ -995,8 +1311,11 @@ def main():
     app.setApplicationDisplayName("EZpanso")
     app.setOrganizationName("EZpanso")
     
+    # Set version for the application
+    app.setApplicationVersion("1.2.0")
+    
     # Set application icon globally
-    icon_path = os.path.join(os.path.dirname(__file__), 'icon.iconset', 'icon_512x512.png')
+    icon_path = os.path.join(os.path.dirname(__file__), 'icon_512x512.png')
     if os.path.exists(icon_path):
         app.setWindowIcon(QIcon(icon_path))
     
@@ -1006,4 +1325,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
