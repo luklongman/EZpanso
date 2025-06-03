@@ -4,23 +4,21 @@
 
 <img src="https://github.com/user-attachments/assets/171a0cfc-f1e6-4070-94a0-eb83ef7c1163" alt="icon_512x512@2x" width="25%" />
 
-A minimal GUI app for managing your [Espanso](https://espanso.org/) text expansion matches, particularly useful for looking up and editing simple matches across YAML files. Built with PyYAML & PyQt6.
-DMG available for MacOS. Python installation available across platforms.
+A minimal GUI app for managing your [Espanso](https://espanso.org/) text expansion matches, particularly useful for looking up and editing simple matches across YAML files. Built with PyYAML & PyQt6. DMG available for MacOS. Python installation available across platforms.
 
 <https://github.com/user-attachments/assets/47499f82-af35-42ba-9cab-21e8aa332cc5>
 
 ## 🆕 Update v1.2.0 (Jun 03, 2025)
 
-### ✨ New Features
+### ✨ Important
 
-- **📂 Open File Button** - Added "Open" button to open the current file for advanced editing in your system's default editor
-- **⌨️ Enhanced Shortcuts** - `Cmd+O` (macOS) / `Ctrl+O` opens current file for advanced editing
-- **🔄 Better UI** - Changed "New" button to "New match" for improved clarity
+- **📝 YAML Formatting** - Enhanced YAML output formatting to avoid unnecessary double quotes.
 
 ### 🔧 Improvements
 
-- **📝 YAML Formatting** - Enhanced YAML output formatting to avoid unnecessary double quotes, resulting in cleaner and more readable files
-- **🔧 Unified Preferences** - Consolidated About, Settings, and Links into a single comprehensive Preferences dialog
+- **📂 Open File Button** - Added "Open" button to open the current file for advanced editing in your system's default editor. `Cmd+O` (macOS) / `Ctrl+O
+- **🔧 Unified Preferences** - Consolidated Match Folder Path Setting, info and links into a single Preferences dialog
+- 🔄 Better UX/UI in general
 
 ### 🍎 Previous Update v1.1 (Jun 02, 2025)
 
