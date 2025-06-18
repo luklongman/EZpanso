@@ -13,7 +13,7 @@ https://github.com/user-attachments/assets/89aba5da-6636-417d-a75f-37485189e83b
 | **Features** | description | macOS | Windows/Linux | Version |
 |:------|:-------------|:-------|:---------------|:---------|
 | **Auto-Load** | Auto-Load Espanso match files and packages at default folder path |  |  | |
-| **Locate** | Or customize folder path at settings| ⌘+, | Ctrl+, | 1.2.0+ |
+| **Locate** | Customize folder path at settings| ⌘+, | Ctrl+, | 1.2.0+ |
 | **Find & Sort** | Filter quickly and view table with sortable columns | ⌘+F | Ctrl+F | |
 | **Edit Simple Matches** | Edit in place with undo/redo support | ⌘+Z / ⇧⌘+Z | Ctrl+Z / Ctrl+Y | |
 | **Create** | Add new matches with duplicate detection | ⌘+N | Ctrl+N | |
