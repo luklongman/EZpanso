@@ -1,4 +1,4 @@
-# EZpanso - Easy editor for Espanso
+# EZpanso 1.2.1 - Easy editor for Espanso
 
 <div>
   <img src="https://github.com/user-attachments/assets/cb893176-d625-42fd-b332-e72b8827cec4" alt="EZpanso-icon" width="160" align="left" style="margin-right: 20px; margin-top: -20px;" />
