@@ -8,10 +8,20 @@
 </div>
 <br clear="all" />
 
-<https://github.com/user-attachments/assets/774fa2c8-ad27-42ca-85c5-8342e2a99802>
+## Highlights
 
-
-https://github.com/user-attachments/assets/a1ed9e8f-bfbc-4030-9d3e-31d06381a880
+<div align="center">
+  <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;">
+    <div style="flex: 1; min-width: 300px; max-width: 49%;">
+      <img src="https://github.com/user-attachments/assets/a1ed9e8f-bfbc-4030-9d3e-31d06381a880" width="100%" alt="EZpanso Main Interface">
+      <p align="center"><em>v1.2.1 Updates</em></p>
+    </div>
+    <div style="flex: 1; min-width: 300px; max-width: 49%;">
+      <img src="https://github.com/user-attachments/assets/774fa2c8-ad27-42ca-85c5-8342e2a99802" width="100%" alt="EZpanso Editing View">
+      <p align="center"><em>v1.2.0 Updates</em></p>
+    </div>
+  </div>
+</div>
 
 
 ## ✨ Features
