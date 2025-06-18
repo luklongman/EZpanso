@@ -5,6 +5,22 @@ All notable changes to EZpanso will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2025-06-17
+
+### Fixed
+
+- 🔧 **File Loading Robustness** - Fixed critical bug where files with empty matches were not loaded into the UI dropdown
+- 🎯 **UI Population** - Enhanced file loading to ensure all valid YAML files appear in the file selector, even if they contain no matches
+- 📱 **Initialization Order** - Improved UI initialization sequence to handle edge cases where file loading occurs before UI setup
+
+### Technical
+
+- Improved `_load_single_yaml_file` to load files even when matches array is empty
+- Enhanced `_load_all_yaml_files` to populate file selector with deferred loading support
+- Added robust error handling for file loading and UI population edge cases
+- Consolidated test suite organization and removed redundant test files
+- Updated version references throughout build scripts and documentation
+
 ## [1.2.0] - 2025-06-03
 
 ### Added

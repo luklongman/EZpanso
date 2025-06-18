@@ -91,16 +91,16 @@ echo "   Intel app bundle: $(du -sh dist/EZpanso-Intel.app | cut -f1)"
 echo "   Apple Silicon app bundle: $(du -sh dist/EZpanso-AppleSilicon.app | cut -f1)"
 
 # Create DMGs for both architectures
-create_dmg_for_arch "Intel" "EZpanso-Intel.app" "EZpanso-1.2.0-Intel.dmg"
-create_dmg_for_arch "Apple Silicon" "EZpanso-AppleSilicon.app" "EZpanso-1.2.0-AppleSilicon.dmg"
+create_dmg_for_arch "Intel" "EZpanso-Intel.app" "EZpanso-1.2.1-Intel.dmg"
+create_dmg_for_arch "Apple Silicon" "EZpanso-AppleSilicon.app" "EZpanso-1.2.1-AppleSilicon.dmg"
 
 echo "🎉 Multi-architecture build complete!"
 echo "📁 App bundles (both named EZpanso.app but different architectures):"
 echo "   Intel: dist/EZpanso-Intel.app"
 echo "   Apple Silicon: dist/EZpanso-AppleSilicon.app"
 echo "📦 DMG installers:"
-echo "   Intel: EZpanso-1.2.0-Intel.dmg"
-echo "   Apple Silicon: EZpanso-1.2.0-AppleSilicon.dmg"
+echo "   Intel: EZpanso-1.2.1-Intel.dmg"
+echo "   Apple Silicon: EZpanso-1.2.1-AppleSilicon.dmg"
 
 # Test the appropriate app based on current architecture
 ARCH=$(uname -m)

@@ -1,8 +1,6 @@
 #!/bin/bash
 
-# EZpa# Run cleanup script first
-echo "🧹 Running project cleanup..."
-python scripts/cleanup.py Build Script for macOS
+# EZpanso Build Script for macOS
 # This script creates a distributable .app bundle and .dmg file
 
 set -e  # Exit on any error
@@ -21,7 +19,7 @@ echo "🚀 Building EZpanso for macOS ($ARCH_NAME)..."
 
 # Run cleanup script first
 echo "🧹 Running project cleanup..."
-python3 cleanup.py
+python3 scripts/cleanup.py
 
 # Clean previous builds (redundant after cleanup but ensures clean slate)
 echo "🗑️  Ensuring clean build environment..."
@@ -49,7 +47,7 @@ echo "   App bundle: $(du -sh dist/EZpanso.app | cut -f1)"
 echo "   Executable: $(du -sh dist/EZpanso | cut -f1)"
 
 # For DMG creation, use architecture in filename
-DMG_NAME="EZpanso-1.2.0-$ARCH_NAME.dmg"
+DMG_NAME="EZpanso-1.2.1-$ARCH_NAME.dmg"
 
 # Create DMG (optional, requires create-dmg)
 if command -v create-dmg &> /dev/null; then

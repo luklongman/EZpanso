@@ -10,7 +10,10 @@ from PyQt6.QtGui import QIcon
 # Add the missing imports that main.py needs
 import yaml
 
-# Import the class to test
+# Import the class to test (adjust path since we're in tests/ subdirectory)
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from main import EZpanso, FileData
 
 
@@ -232,7 +235,7 @@ class TestEZpansoInit:
     def test_icon_path_construction(self, mock_exists, mock_join, mock_dirname, qapp, mock_settings):
         """Test that icon path is constructed correctly."""
         mock_dirname.return_value = "/test/app/dir"
-        mock_join.return_value = "/test/app/dir/icon.iconset/icon_512x512.png"
+        mock_join.return_value = "/test/app/dir/icon_512x512.png"
         mock_exists.return_value = False
         
         with patch.object(EZpanso, '_setup_ui'), \
@@ -241,10 +244,10 @@ class TestEZpansoInit:
             
             window = EZpanso()
             
-            # Verify path construction calls
-            mock_dirname.assert_called_once()
-            mock_join.assert_called_once_with("/test/app/dir", 'icon.iconset', 'icon_512x512.png')
-            mock_exists.assert_called_once_with("/test/app/dir/icon.iconset/icon_512x512.png")
+            # Verify path construction calls - actual implementation uses ICON_FILENAME constant
+            assert mock_dirname.called  # Allow multiple calls due to YAML handler imports
+            mock_join.assert_called_once_with("/test/app/dir", 'icon_512x512.png')
+            mock_exists.assert_called_once_with("/test/app/dir/icon_512x512.png")
     
     def test_window_properties_after_init(self, qapp, mock_settings, mock_os_path):
         """Test window properties are set correctly after initialization."""
@@ -263,14 +266,20 @@ class TestEZpansoInit:
             assert size.height() == 800
     
     def test_exception_handling_in_setup_methods(self, qapp, mock_settings, mock_os_path):
-        """Test that exceptions in setup methods don't prevent initialization."""
+        """Test that exceptions in setup methods are caught and handled."""
         with patch.object(EZpanso, '_setup_ui', side_effect=Exception("UI setup failed")), \
              patch.object(EZpanso, '_setup_menubar'), \
-             patch.object(EZpanso, '_load_all_yaml_files'):
+             patch.object(EZpanso, '_load_all_yaml_files'), \
+             patch.object(EZpanso, '_show_critical') as mock_critical:
             
-            # Should not raise exception even if _setup_ui fails
-            with pytest.raises(Exception, match="UI setup failed"):
-                window = EZpanso()
+            # Exception should be caught and handled via _show_critical
+            window = EZpanso()
+            
+            # Verify that the critical error dialog was shown
+            mock_critical.assert_called_once()
+            args = mock_critical.call_args[0]
+            assert "Initialization Error" in args[0]
+            assert "UI setup failed" in args[1]
 
 
 class TestEZpansoHelperMethods:
@@ -337,8 +346,7 @@ class TestEZpansoDataHandling:
         with patch.object(EZpanso, '_setup_ui'), \
              patch.object(EZpanso, '_setup_menubar'), \
              patch.object(EZpanso, '_load_all_yaml_files'), \
-             patch('builtins.open', mock_open(read_data='matches:\n  - trigger: ":test"\n    replace: "test value"')), \
-             patch('main.yaml.safe_load') as mock_yaml_load:
+             patch('yaml_handler.YAMLHandler.load') as mock_yaml_load:
             
             mock_yaml_load.return_value = {
                 'matches': [
@@ -360,17 +368,17 @@ class TestEZpansoDataHandling:
         with patch.object(EZpanso, '_setup_ui'), \
              patch.object(EZpanso, '_setup_menubar'), \
              patch.object(EZpanso, '_load_all_yaml_files'), \
-             patch('builtins.open', mock_open(read_data='other_key: value')), \
-             patch('main.yaml.safe_load') as mock_yaml_load:
+             patch('yaml_handler.YAMLHandler.load') as mock_yaml_load:
             
-            mock_yaml_load.return_value = {'other_key': 'value'}
+            mock_yaml_load.return_value = {'other_key': 'value', 'matches': []}
             
             window = EZpanso()
             window._load_single_yaml_file('/test/file.yml')
             
-            # Test that file was not added (no matches)
-            assert '/test/file.yml' not in window.files_data
-            assert '/test/file.yml' not in window.file_paths
+            # Test that file was added even with empty matches list
+            assert '/test/file.yml' in window.files_data
+            assert window.files_data['/test/file.yml'] == []
+            assert '/test/file.yml' in window.file_paths
     
     def test_load_single_yaml_file_exception(self, qapp, mock_settings, mock_os_path):
         """Test loading a YAML file that raises an exception."""
@@ -518,18 +526,19 @@ class TestEZpansoFileOperations:
             
             window._load_all_yaml_files()
             
-            # Should show warning
-            mock_warning.assert_called_once_with("Error", "Could not find Espanso match directory. Use File > Set Folder to select one.")
+            # Should show warning with correct message format
+            mock_warning.assert_called_once_with("Missing Directory", "Could not find Espanso match directory.\nUse File > Set Folder to select one.")
     
     def test_save_single_file_success(self, qapp, mock_settings, mock_os_path):
         """Test successfully saving a single file."""
         with patch.object(EZpanso, '_setup_ui'), \
              patch.object(EZpanso, '_setup_menubar'), \
              patch.object(EZpanso, '_load_all_yaml_files'), \
+             patch.object(EZpanso, '_load_single_yaml_file'), \
              patch('main.os.path.exists', return_value=True), \
              patch('builtins.open', mock_open(read_data='existing: content\nmatches: []')), \
-             patch('main.yaml.safe_load') as mock_yaml_load, \
-             patch('main.yaml.dump') as mock_yaml_dump:
+             patch('yaml_handler.YAMLHandler.load') as mock_yaml_load, \
+             patch('yaml_handler.YAMLHandler.save', return_value=True) as mock_yaml_save:
             
             mock_yaml_load.return_value = {'existing': 'content', 'matches': []}
             
@@ -539,10 +548,9 @@ class TestEZpansoFileOperations:
             result = window._save_single_file('/test/file.yml', matches)
             
             assert result is True
-            mock_yaml_dump.assert_called_once()
-            # Check that matches were updated
-            dump_args = mock_yaml_dump.call_args[0]
-            assert dump_args[0]['matches'] == matches
+            mock_yaml_save.assert_called_once()
+            # Check that _load_single_yaml_file was called to reload the file
+            window._load_single_yaml_file.assert_called_once_with('/test/file.yml')
     
     def test_save_single_file_exception(self, qapp, mock_settings, mock_os_path):
         """Test saving a file that raises an exception."""
@@ -550,6 +558,7 @@ class TestEZpansoFileOperations:
         with patch.object(EZpanso, '_setup_ui'), \
              patch.object(EZpanso, '_setup_menubar'), \
              patch.object(EZpanso, '_load_all_yaml_files'), \
+             patch.object(EZpanso, '_load_single_yaml_file'), \
              patch.object(EZpanso, '_show_critical') as mock_critical:
             
             window = EZpanso()
@@ -562,6 +571,8 @@ class TestEZpansoFileOperations:
             assert result is False
             mock_critical.assert_called_once()
             assert "Save Error" in mock_critical.call_args[0][0]
+            # Make sure _load_single_yaml_file was NOT called (since save failed)
+            window._load_single_yaml_file.assert_not_called()
 
 
 class TestEZpansoTableOperations:

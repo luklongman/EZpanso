@@ -1,8 +1,18 @@
 #!/usr/bin/env python3
-import sys
+"""
+EZpanso - Easy editor for Espanso text expansion snippets.
+
+This module provides a PyQt6-based GUI application for managing Espanso YAML files,
+allowing users to view, edit, create, and delete text expansion snippets.
+"""
+
+# Standard library imports
 import os
-import yaml
+import sys
 from typing import Dict, List, Any, Optional
+
+# Third-party imports
+import yaml
 from PyQt6.QtCore import Qt, QSettings, QUrl
 from PyQt6.QtGui import QBrush, QColor, QKeySequence, QShortcut, QIcon, QDesktopServices
 from PyQt6.QtWidgets import (
@@ -12,79 +22,73 @@ from PyQt6.QtWidgets import (
     QFileDialog, QCheckBox
 )
 
+# Local imports
+from yaml_handler import create_yaml_handler
+from styles import (
+    BUTTON_STYLE, PRIMARY_BUTTON_STYLE, INPUT_STYLE, LABEL_STYLE, 
+    INFO_LABEL_STYLE, INFO_LABEL_MULTILINE_STYLE, ABOUT_LABEL_STYLE,
+    WARNING_ICON_STYLE, WARNING_TEXT_BACKGROUND_STYLE, CHECKBOX_STYLE,
+    WARNING_BUTTON_STYLE, MESSAGE_BOX_STYLE, DISABLED_BUTTON_STYLE
+)
+
+# Type aliases for better code clarity
 FileData = Dict[str, List[Dict[str, Any]]]  # file_path -> list of match dictionaries
+
+# Constants
+MAX_UNDO_STEPS = 50
+DEFAULT_WINDOW_SIZE = (600, 800)
+ICON_FILENAME = "icon_512x512.png"
 
 
 class EZpanso(QMainWindow):
+    """Main application window for EZpanso.
+    
+    A PyQt6-based GUI application for managing Espanso text expansion snippets.
+    Provides functionality to view, edit, create, and delete snippets from YAML files.
+    """
     def __init__(self):
+        """Initialize the EZpanso application.
+        
+        Sets up the main window, loads settings, initializes data structures,
+        and sets up the UI components.
+        """
         super().__init__()
+        self._initialize_window()
+        self._initialize_settings()
+        self._initialize_data_structures()
+        self._initialize_ui()
+    
+    def _initialize_window(self) -> None:
+        """Initialize basic window properties."""
         self.setWindowTitle("EZpanso")
-        self.resize(600, 800)
+        self.resize(*DEFAULT_WINDOW_SIZE)
         
-        # Set window icon
+        # Initialize style constants as instance attributes
+        self.button_style = BUTTON_STYLE
+        self.primary_button_style = PRIMARY_BUTTON_STYLE
+        self.input_style = INPUT_STYLE
+        
+        # Set window icon if available
         self.app_icon = None
-        icon_path = os.path.join(os.path.dirname(__file__), 'icon_512x512.png')
+        icon_path = os.path.join(os.path.dirname(__file__), ICON_FILENAME)
         if os.path.exists(icon_path):
-            self.app_icon = QIcon(icon_path)
-            self.setWindowIcon(self.app_icon)
-        
-        # Define unified minimal styles
-        self.button_style = """
-            QPushButton {
-                padding: 4px 8px;
-                font-size: 11px;
-                border: 1px solid #ddd;
-                border-radius: 2px;
-                background-color: white;
-                color: #333;
-                min-width: 60px;
-            }
-            QPushButton:hover {
-                border-color: #999;
-                background-color: #f8f8f8;
-            }
-            QPushButton:pressed {
-                background-color: #eee;
-            }
-        """
-        
-        self.primary_button_style = """
-            QPushButton {
-                padding: 4px 8px;
-                font-size: 11px;
-                border: 1px solid #007acc;
-                border-radius: 2px;
-                background-color: #007acc;
-                color: white;
-                min-width: 60px;
-            }
-            QPushButton:hover {
-                background-color: #005c99;
-                border-color: #005c99;
-            }
-            QPushButton:pressed {
-                background-color: #004080;
-            }
-        """
-        
-        self.input_style = """
-            QLineEdit {
-                padding: 4px;
-                border: 1px solid #ddd;
-                border-radius: 2px;
-                font-size: 11px;
-                background-color: white;
-            }
-            QLineEdit:focus {
-                border-color: #007acc;
-            }
-        """
-        
-        # Settings for persistence
+            try:
+                self.app_icon = QIcon(icon_path)
+                self.setWindowIcon(self.app_icon)
+            except Exception as e:
+                print(f"Warning: Could not load application icon: {e}")
+    
+    def _initialize_settings(self) -> None:
+        """Initialize application settings and persistence."""
         self.settings = QSettings("EZpanso", "EZpanso")
         self.custom_espanso_dir = self.settings.value("espanso_dir", "")
+    
+    def _initialize_data_structures(self) -> None:
+        """Initialize all data structures used by the application."""
+        # Initialize YAML handler with comment preservation
+        self.yaml_handler = create_yaml_handler(preserve_comments=True)
         
-        # Step 1-2: Data storage - simple dictionaries
+        # Data storage - simple dictionaries
         self.files_data: FileData = {}  # file_path -> list of match dicts
         self.file_paths: List[str] = []  # ordered list of file paths
         self.display_name_to_path: Dict[str, str] = {}  # display name -> file path mapping
@@ -93,17 +97,30 @@ class EZpanso(QMainWindow):
         self.modified_files: set = set()  # Track which files have been modified
         
         # For sorting and filtering
-        self.current_matches: List[Dict[str, Any]] = []  # Current file's matches
+        self.current_matches: List[Dict[str, Any]] = []  # Current file's matches (for compatibility)
         self.filtered_indices: List[int] = []  # Indices of visible rows
         
         # Undo/Redo system
         self.undo_stack: List[Dict[str, Any]] = []  # Stack of undo states
         self.redo_stack: List[Dict[str, Any]] = []  # Stack of redo states
-        self.max_undo_steps = 50  # Limit undo history
-        
-        self._setup_ui()
-        self._setup_menubar()
-        self._load_all_yaml_files()
+        self.max_undo_steps = MAX_UNDO_STEPS  # Maximum number of undo steps to keep
+    
+    def _initialize_ui(self) -> None:
+        """Initialize the user interface components."""
+        try:
+            self._setup_ui()
+            self._setup_menubar()
+            self._load_all_yaml_files()
+        except Exception as e:
+            print(f"UI Initialization Error: {e}")
+            import traceback
+            traceback.print_exc()
+            # Try to show error dialog if possible
+            try:
+                self._show_critical("Initialization Error", f"Failed to initialize application: {e}")
+            except Exception:
+                # If even the error dialog fails, just print
+                print("Could not show error dialog")
     
     def _format_yaml_value(self, value: str) -> str:
         """Store value as-is - YAML will handle quoting automatically when saving."""
@@ -113,8 +130,17 @@ class EZpanso(QMainWindow):
         """Get the display value for UI, converting actual newlines/tabs to escape sequences."""
         if not isinstance(value, str):
             return str(value)
-        # Convert actual newlines and tabs to escape sequences for display
-        display_value = value.replace('\n', '\\n').replace('\t', '\\t')
+        
+        # Strip outer quotes if they match (for editing convenience)
+        display_value = value
+        if len(display_value) >= 2:
+            if (display_value.startswith('"') and display_value.endswith('"')) or \
+               (display_value.startswith("'") and display_value.endswith("'")):
+                display_value = display_value[1:-1]
+        
+        # First escape literal backslashes, then convert actual newlines/tabs to escape sequences
+        display_value = display_value.replace('\\', '\\\\')  # Escape literal backslashes first
+        display_value = display_value.replace('\n', '\\n').replace('\t', '\\t')
         return display_value
     
     def _process_escape_sequences(self, value: str) -> str:
@@ -122,7 +148,10 @@ class EZpanso(QMainWindow):
         if not isinstance(value, str):
             return str(value)
         # Convert escape sequences to actual characters
-        processed_value = value.replace('\\n', '\n').replace('\\t', '\t')
+        # Handle literal backslashes first to avoid double processing
+        processed_value = value.replace('\\\\', '\x00')  # Temporary placeholder
+        processed_value = processed_value.replace('\\n', '\n').replace('\\t', '\t')
+        processed_value = processed_value.replace('\x00', '\\')  # Restore literal backslashes
         return processed_value
         
     def _setup_ui(self):
@@ -136,7 +165,7 @@ class EZpanso(QMainWindow):
         
         self.filter_box = QLineEdit()
         self.filter_box.setPlaceholderText("Filter...")
-        self.filter_box.setStyleSheet(self.input_style)
+        self.filter_box.setStyleSheet(INPUT_STYLE)
         self.filter_box.textChanged.connect(self._apply_filter)
         file_layout.addWidget(self.filter_box, 1)  # 25% proportion
         
@@ -151,7 +180,7 @@ class EZpanso(QMainWindow):
             open_key = "Ctrl+O"
         
         open_btn = QPushButton(f"Open ({open_key})")
-        open_btn.setStyleSheet(self.button_style)
+        open_btn.setStyleSheet(BUTTON_STYLE)
         open_btn.clicked.connect(self._open_current_file)
         file_layout.addWidget(open_btn, 1)  # 25% proportion
         
@@ -191,21 +220,28 @@ class EZpanso(QMainWindow):
             new_key = "⌘N"
             save_key = "⌘S"
             find_key = "⌘F"
+            refresh_key = "⌘R"
         else:  # Windows/Linux/Unix
             new_key = "Ctrl+N"
             save_key = "Ctrl+S"
             find_key = "Ctrl+F"
+            refresh_key = "F5"
         
         # Update filter box placeholder with find shortcut
         self.filter_box.setPlaceholderText(f"Find ({find_key})...")
         
-        # Bottom button layout: New (left) and Save (right)
+        # Bottom button layout: New, Refresh (left) and Save (right)
         bottom_btn_layout = QHBoxLayout()
         
         new_btn = QPushButton(f"New match ({new_key})")
-        new_btn.setStyleSheet(self.button_style)
+        new_btn.setStyleSheet(BUTTON_STYLE)
         new_btn.clicked.connect(self._add_new_snippet)
         bottom_btn_layout.addWidget(new_btn)
+        
+        refresh_btn = QPushButton(f"Refresh ({refresh_key})")
+        refresh_btn.setStyleSheet(BUTTON_STYLE)
+        refresh_btn.clicked.connect(self._refresh_all_files)
+        bottom_btn_layout.addWidget(refresh_btn)
         
         bottom_btn_layout.addStretch()
         
@@ -216,6 +252,13 @@ class EZpanso(QMainWindow):
         bottom_btn_layout.addWidget(self.save_btn)
         
         layout.addLayout(bottom_btn_layout)
+        
+        # If there are pending display names from early file loading, populate them now
+        if hasattr(self, '_pending_display_names'):
+            self.file_selector.addItems(self._pending_display_names)
+            if self._pending_display_names:
+                self._on_file_selected(self._pending_display_names[0])
+            delattr(self, '_pending_display_names')
         
     def _setup_menubar(self):
         """Setup the application menubar with all items under the main application menu."""
@@ -284,9 +327,14 @@ class EZpanso(QMainWindow):
             display_names.append(display_name)
             self.display_name_to_path[display_name] = file_path
         
-        self.file_selector.addItems(display_names)
-        if display_names:
-            self._on_file_selected(display_names[0])
+        # Populate file selector if it exists (UI has been set up)
+        if hasattr(self, 'file_selector') and self.file_selector is not None:
+            self.file_selector.addItems(display_names)
+            if display_names:
+                self._on_file_selected(display_names[0])
+        else:
+            # Store display names for later population if UI isn't ready yet
+            self._pending_display_names = display_names
     
     def _get_display_name(self, file_path: str) -> str:
         """Get display name for a file, using parent folder name for package.yml files."""
@@ -298,19 +346,24 @@ class EZpanso(QMainWindow):
         return filename
     
     def _load_single_yaml_file(self, file_path: str):
-        """Step 2: Load matches into dictionary per file."""
+        """Step 2: Load matches into dictionary per file with comment preservation.
+        
+        This method is called both during initial loading and after saving to ensure
+        data consistency between memory and disk.
+        """
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                yaml_content = yaml.safe_load(f) or {}
+            yaml_content = self.yaml_handler.load(file_path) or {}
             
-            # Skip files that don't contain a dictionary or don't have matches
+            # Skip files that don't contain a dictionary
             if not isinstance(yaml_content, dict):
                 return
                 
             matches = yaml_content.get('matches', [])
-            if isinstance(matches, list) and matches:  # Only add if has actual matches
+            if isinstance(matches, list):  # Load files with matches list (even if empty)
                 self.files_data[file_path] = matches
-                self.file_paths.append(file_path)
+                # Only append to file_paths if not already present (avoid duplication)
+                if file_path not in self.file_paths:
+                    self.file_paths.append(file_path)
                 
         except Exception as e:
             print(f"Error loading {file_path}: {e}")
@@ -335,9 +388,12 @@ class EZpanso(QMainWindow):
         matches = self.files_data.get(self.active_file_path, [])
         self._populate_table(matches)
     
-    def _create_table_item(self, text: str, is_complex: bool = False) -> QTableWidgetItem:
-        """Create a table item with consistent formatting."""
+    def _create_table_item(self, text: str, trigger_id: str, is_complex: bool = False) -> QTableWidgetItem:
+        """Create a table item with consistent formatting and unique identifier."""
         item = QTableWidgetItem(text)
+        
+        # Store unique identifier in item data for sorting-independent lookup
+        item.setData(Qt.ItemDataRole.UserRole, trigger_id)
         
         if is_complex:
             # Gray out complex matches and prevent editing
@@ -349,11 +405,15 @@ class EZpanso(QMainWindow):
 
     def _populate_table(self, matches: List[Dict[str, Any]]):
         """Populate table with matches, graying out complex ones."""
-        # Store the original matches
-        self.current_matches = matches.copy()
-        
+        # Only populate if table exists (UI has been set up)
+        if not hasattr(self, 'table') or not self.table:
+            return
+            
         # Sort: Editable entries first, then alphabetical by trigger
-        sorted_matches = self._sort_matches(matches)
+        sorted_matches = self._sort_easy_match(matches)
+        
+        # Store the sorted matches so table row indices correspond correctly
+        self.current_matches = sorted_matches.copy()
         
         self.table.blockSignals(True)
         self.table.setSortingEnabled(False)  # Disable during population
@@ -370,9 +430,9 @@ class EZpanso(QMainWindow):
             # Step 4: Check if complex (more than trigger/replace)
             is_complex = self._is_complex_match(match)
             
-            # Create table items using helper method
-            trigger_item = self._create_table_item(display_trigger, is_complex)
-            replace_item = self._create_table_item(display_replace, is_complex)
+            # Create table items using helper method with trigger as unique ID
+            trigger_item = self._create_table_item(display_trigger, trigger, is_complex)
+            replace_item = self._create_table_item(display_replace, trigger, is_complex)
             
             self.table.setItem(i, 0, trigger_item)
             self.table.setItem(i, 1, replace_item)
@@ -393,7 +453,7 @@ class EZpanso(QMainWindow):
         # Consider complex if has extra keys or vars
         return len(extra_keys) > 0 or 'vars' in match
     
-    def _sort_matches(self, matches: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _sort_easy_match(self, matches: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Sort matches: editable entries first, then alphabetical by trigger."""
         def sort_key(match):
             is_complex = self._is_complex_match(match)
@@ -468,7 +528,9 @@ class EZpanso(QMainWindow):
         # Confirm deletion if requested
         if show_confirmation:
             if len(triggers_to_delete) == 1:
-                message = f"Delete match '{triggers_to_delete[0]}'?\nThis action cannot be undone."
+                # Display the trigger in a user-friendly format
+                display_trigger = self._get_display_value(triggers_to_delete[0])
+                message = f"Delete match '{display_trigger}'?\nThis action cannot be undone."
             else:
                 message = f"Delete {len(triggers_to_delete)} matches?\nThis action cannot be undone."
 
@@ -480,7 +542,8 @@ class EZpanso(QMainWindow):
         
         # Save state before deletion
         if len(triggers_to_delete) == 1:
-            self._save_state(f"Delete match: '{triggers_to_delete[0]}'")
+            display_trigger = self._get_display_value(triggers_to_delete[0])
+            self._save_state(f"Delete match: '{display_trigger}'")
         else:
             self._save_state(f"Delete {len(triggers_to_delete)} matches")
 
@@ -493,6 +556,9 @@ class EZpanso(QMainWindow):
                 remaining_matches.append(match)
         
         self.files_data[self.active_file_path] = remaining_matches
+        
+        # Clear table selection before refreshing to prevent TSM errors
+        self.table.clearSelection()
         
         # Mark as modified and refresh
         self._mark_modified_and_refresh()
@@ -525,55 +591,71 @@ class EZpanso(QMainWindow):
         if not selected_rows:
             return
         
-        # Get triggers for deletion
+        # Get triggers for deletion using stored trigger IDs
         triggers_to_delete = []
         for row in selected_rows:
             trigger_item = self.table.item(row, 0)
             if trigger_item:
-                triggers_to_delete.append(trigger_item.text())
+                # Use stored trigger ID for reliable lookup
+                trigger_id = trigger_item.data(Qt.ItemDataRole.UserRole)
+                if trigger_id:
+                    triggers_to_delete.append(trigger_id)
         
         self._delete_snippets_by_triggers(triggers_to_delete)
     
     def _on_item_changed(self, item: QTableWidgetItem):
-        """Step 5-6: Handle in-place editing and update dictionary."""
+        """Handle in-place editing using stored trigger ID for sorting-independent lookup."""
         if not self.active_file_path:
             return
             
-        row = item.row()
+        # Get the unique trigger ID stored in the item
+        trigger_id = item.data(Qt.ItemDataRole.UserRole)
+        if not trigger_id:
+            print("Warning: No trigger ID found in table item")
+            return
+            
         col = item.column()
         new_value = item.text()
         
         # Process escape sequences in the input
         new_value = self._process_escape_sequences(new_value)
         
-        # Get the trigger value to find the corresponding match in original data
-        trigger_item = self.table.item(row, 0)
-        if not trigger_item:
-            return
-            
-        current_trigger = trigger_item.text()
-        
-        # Find the match using helper method
-        target_match, target_index = self._find_match_by_trigger_display(current_trigger)
+        # Find the corresponding match in files_data using the trigger ID
+        target_match, target_index = self._find_match_by_trigger(trigger_id)
         
         if target_match is None:
+            print(f"Warning: Could not find match for trigger '{trigger_id}' in files_data")
             return
         
         # Get old value for comparison
-        old_value = target_match.get('trigger' if col == 0 else 'replace', '')
-        compare_value = self._get_display_value(str(old_value)) if col == 1 else str(old_value)
+        field_name = 'trigger' if col == 0 else 'replace'
+        old_value = target_match.get(field_name, '')
+        compare_value = self._process_escape_sequences(self._get_display_value(str(old_value)))
         
         # Save state before making changes
         if compare_value != new_value:  # Only save state if value actually changed
             if col == 0:
                 self._save_state(f"Edit trigger: '{compare_value}' → '{new_value}'")
             else:
-                self._save_state(f"Edit replace: '{current_trigger}' content")
+                trigger_display = self._get_display_value(trigger_id)
+                self._save_state(f"Edit replace: '{trigger_display}' content")
         
         # Update the field using validation helper
-        field_name = 'trigger' if col == 0 else 'replace'
-        if self._validate_and_update_field(item, target_match, target_index, field_name, new_value, current_trigger):
-            self._mark_modified_and_refresh()
+        if self._validate_and_update_field(item, target_match, target_index, field_name, new_value, trigger_id):
+            # Mark as modified but skip table refresh to avoid disrupting in-place editing
+            self._mark_modified_and_refresh(skip_table_refresh=True)
+            
+            # If we edited the trigger, update the stored trigger ID in both items of this row
+            if col == 0 and new_value != trigger_id:
+                new_trigger_id = self._format_yaml_value(new_value)
+                # Update trigger ID in both cells of this row
+                row = item.row()
+                trigger_item = self.table.item(row, 0)
+                replace_item = self.table.item(row, 1)
+                if trigger_item:
+                    trigger_item.setData(Qt.ItemDataRole.UserRole, new_trigger_id)
+                if replace_item:
+                    replace_item.setData(Qt.ItemDataRole.UserRole, new_trigger_id)
         
     def _check_duplicate_trigger(self, new_trigger: str, exclude_index: int = -1) -> bool:
         """Check if a trigger already exists in the current file."""
@@ -586,6 +668,18 @@ class EZpanso(QMainWindow):
                 return True
         return False
     
+    def _find_match_by_trigger(self, trigger: str):
+        """Find a match by its trigger value. Returns (match, index) or (None, -1)."""
+        if not self.active_file_path:
+            return None, -1
+        
+        matches = self.files_data[self.active_file_path]
+        for i, match in enumerate(matches):
+            stored_trigger = str(match.get('trigger', ''))
+            if stored_trigger == trigger:
+                return match, i
+        return None, -1
+
     def _find_match_by_trigger_display(self, trigger_display: str):
         """Find a match by its display trigger value. Returns (match, index) or (None, -1)."""
         if not self.active_file_path:
@@ -599,14 +693,14 @@ class EZpanso(QMainWindow):
                 return match, i
         return None, -1
 
-    def _mark_modified_and_refresh(self):
+    def _mark_modified_and_refresh(self, skip_table_refresh: bool = False):
         """Mark the file as modified and refresh the UI."""
         if self.active_file_path:
             self.modified_files.add(self.active_file_path)
         self.is_modified = True
         self._update_title()
         self._update_save_button_state()
-        if self.active_file_path:
+        if self.active_file_path and not skip_table_refresh:
             matches = self.files_data.get(self.active_file_path, [])
             self._populate_table(matches)
 
@@ -637,6 +731,10 @@ class EZpanso(QMainWindow):
             self._show_information("No Changes", "No changes to save.\nAll files are already up to date.")
             return
         
+        # Clear table selection before showing dialog to prevent TSM errors on macOS
+        if hasattr(self, 'table'):
+            self.table.clearSelection()
+        
         modified_count = len(self.modified_files)
         reply = self._show_question(
             "Save Changes", 
@@ -648,22 +746,32 @@ class EZpanso(QMainWindow):
             self._save_all_files()
     
     def _save_single_file(self, file_path: str, matches: List[Dict[str, Any]]) -> bool:
-        """Save a single YAML file. Returns True if successful."""
+        """Save a single YAML file with comment preservation. Returns True if successful."""
         try:
-            # Read existing file to preserve other keys
+            # Read existing file to preserve other keys and comments
             existing_content = {}
             if os.path.exists(file_path):
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    existing_content = yaml.safe_load(f) or {}
+                existing_content = self.yaml_handler.load(file_path) or {}
             
             # Update matches section
             existing_content['matches'] = matches
             
-            # Write back with clean YAML formatting
-            with open(file_path, 'w', encoding='utf-8') as f:
-                yaml.dump(existing_content, f, sort_keys=False, allow_unicode=True, default_style=None)
+            # Write back with comment preservation if available
+            save_successful = False
+            if self.yaml_handler.save(existing_content, file_path):
+                save_successful = True
+            else:
+                # Fallback to PyYAML if YAML handler fails
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    yaml.dump(existing_content, f, sort_keys=False, allow_unicode=True, default_style=None)
+                save_successful = True
             
-            return True
+            # Reload the file to ensure our in-memory data matches what's on disk
+            if save_successful:
+                self._load_single_yaml_file(file_path)
+                return True
+            
+            return False
             
         except Exception as e:
             self._show_critical("Save Error", f"Error saving file:\n{e}")
@@ -672,6 +780,7 @@ class EZpanso(QMainWindow):
     def _save_all_files(self):
         """Save only the modified YAML files."""
         saved_count = 0
+        failed_count = 0
         
         # Only save files that have been modified
         for file_path in self.modified_files.copy():  # Use copy to avoid modification during iteration
@@ -679,14 +788,24 @@ class EZpanso(QMainWindow):
             if self._save_single_file(file_path, matches):
                 saved_count += 1
                 self.modified_files.discard(file_path)  # Remove from modified set after successful save
+            else:
+                failed_count += 1
         
-        if saved_count > 0:
+        # Update UI based on save results
+        if saved_count > 0 or failed_count > 0:
             # Only clear is_modified if no files remain modified
             if not self.modified_files:
                 self.is_modified = False
             self._update_title()
             self._update_save_button_state()
-            self._show_information("Files Saved", f"Successfully saved {saved_count} file(s).\nAll changes have been written to disk.")
+            # Refresh the current view to reflect latest state
+            self._refresh_current_view()
+            
+            # Show appropriate message
+            if failed_count == 0:
+                self._show_information("Files Saved", f"Successfully saved {saved_count} file(s).\nAll changes have been written to disk.")
+            else:
+                self._show_warning("Save Incomplete", f"Saved {saved_count} file(s), but {failed_count} file(s) failed to save.\nSee error messages for details.")
     
     def _update_title(self):
         """Update window title with modification indicator."""
@@ -718,7 +837,7 @@ class EZpanso(QMainWindow):
         trigger_layout.setSpacing(8)
         label = QLabel("Trigger:")
         label.setMinimumWidth(60)
-        label.setStyleSheet("font-weight: bold; color: #333; font-size: 11px;")
+        label.setStyleSheet(LABEL_STYLE)
         trigger_layout.addWidget(label)
         trigger_input = QLineEdit()
         trigger_input.setPlaceholderText(":email")
@@ -731,7 +850,7 @@ class EZpanso(QMainWindow):
         replace_layout.setSpacing(8)
         label = QLabel("Replace:")
         label.setMinimumWidth(60)
-        label.setStyleSheet("font-weight: bold; color: #333; font-size: 11px;")
+        label.setStyleSheet(LABEL_STYLE)
         replace_layout.addWidget(label)
         replace_input = QLineEdit()
         replace_input.setPlaceholderText("johnny@water.com")
@@ -741,7 +860,7 @@ class EZpanso(QMainWindow):
         
         # Tip
         tip_label = QLabel("Tip: Type \\n for new lines, \\t for tabs")
-        tip_label.setStyleSheet("color: #666; font-size: 10px; margin: 5px 0;")
+        tip_label.setStyleSheet(INFO_LABEL_STYLE)
         layout.addWidget(tip_label)
         
         # Buttons
@@ -857,7 +976,43 @@ class EZpanso(QMainWindow):
         self._update_save_button_state()
         if self.active_file_path:
             self._populate_table(self.files_data[self.active_file_path])
-
+    
+    def _refresh_all_files(self):
+        """Reload all YAML files from disk and refresh the UI."""
+        # Save current file selection
+        current_display_name = self.file_selector.currentText() if hasattr(self, 'file_selector') else None
+        
+        # Clear all data
+        self.files_data.clear()
+        self.file_paths.clear()
+        self.display_name_to_path.clear()
+        
+        # Clear UI
+        if hasattr(self, 'file_selector'):
+            self.file_selector.clear()
+        if hasattr(self, 'table'):
+            self.table.setRowCount(0)
+        
+        # Reset modification state since we're reloading from disk
+        self.is_modified = False
+        self.modified_files.clear()
+        self.active_file_path = None
+        
+        # Reload all files
+        self._load_all_yaml_files()
+        
+        # Restore file selection if possible
+        if current_display_name and hasattr(self, 'file_selector'):
+            index = self.file_selector.findText(current_display_name)
+            if index >= 0:
+                self.file_selector.setCurrentIndex(index)
+            elif self.file_selector.count() > 0:
+                self.file_selector.setCurrentIndex(0)
+        
+        # Update UI state
+        self._update_title()
+        self._update_save_button_state()
+    
     def _undo(self):
         """Undo the last operation."""
         if not self.undo_stack:
@@ -901,46 +1056,7 @@ class EZpanso(QMainWindow):
             msg_box.setWindowIcon(self.app_icon)
         
         # Enhanced styling with consistent button appearance and transparent backgrounds
-        msg_box.setStyleSheet("""
-            QMessageBox {
-                border: 1px solid #ccc;
-                min-width: 300px;
-            }
-            QMessageBox QLabel {
-                color: #333;
-                font-size: 12px;
-                padding: 15px;
-                line-height: 1.5;
-                margin: 5px;
-            }
-            QMessageBox QPushButton {
-                padding: 4px 8px;
-                font-size: 11px;
-                border: 1px solid #ddd;
-                border-radius: 2px;
-                color: #333;
-                min-width: 60px;
-                margin: 2px;
-            }
-            QMessageBox QPushButton:hover {
-                border-color: #999;
-            }
-            QMessageBox QPushButton:pressed {
-                border-color: #666;
-            }
-            QMessageBox QPushButton:default {
-                border: 1px solid #007acc;
-                background-color: #007acc;
-                color: white;
-            }
-            QMessageBox QPushButton:default:hover {
-                background-color: #005c99;
-                border-color: #005c99;
-            }
-            QMessageBox QPushButton:default:pressed {
-                background-color: #004080;
-            }
-        """)
+        msg_box.setStyleSheet(MESSAGE_BOX_STYLE)
         
         return msg_box
     
@@ -963,6 +1079,10 @@ class EZpanso(QMainWindow):
     def closeEvent(self, event):
         """Handle window close event - warn if there are unsaved changes."""
         if self.is_modified:
+            # Clear table selection before showing dialog to prevent TSM errors on macOS
+            if hasattr(self, 'table'):
+                self.table.clearSelection()
+                
             reply = self._show_question(
                 "Unsaved Changes",
                 "You have unsaved changes.\nDo you want to save before closing?",
@@ -990,6 +1110,7 @@ class EZpanso(QMainWindow):
             (QKeySequence(Qt.Key.Key_Backspace), self._delete_selected_snippets),
             (QKeySequence.StandardKey.Undo, self._undo),
             (QKeySequence.StandardKey.Redo, self._redo),
+            (QKeySequence.StandardKey.Refresh, self._refresh_all_files),
         ]
         
         for key_sequence, callback in shortcuts:
@@ -1012,12 +1133,12 @@ class EZpanso(QMainWindow):
         layout.setContentsMargins(20, 20, 20, 20)
         
         # Get version and current year
-        version = getattr(self, 'app_version', '1.2.0')
+        version = getattr(self, 'app_version', '1.2.1')
         current_year = __import__('datetime').datetime.now().year
         
         # Settings Section
         current_folder_label = QLabel("Espanso Match Folder Directory:")
-        current_folder_label.setStyleSheet("font-weight: bold; font-size: 11px; color: #333;")
+        current_folder_label.setStyleSheet(LABEL_STYLE)
         layout.addWidget(current_folder_label)
         
         # Create horizontal layout for text field and button
@@ -1040,6 +1161,16 @@ class EZpanso(QMainWindow):
         # Add spacing
         layout.addSpacing(15)
         
+        # Comment Preservation Info
+        backend_info = f"YAML Backend: {self.yaml_handler.backend}"
+        comment_info = QLabel(backend_info)
+        comment_info.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        comment_info.setStyleSheet(INFO_LABEL_MULTILINE_STYLE)
+        layout.addWidget(comment_info)
+        
+        # Add spacing
+        layout.addSpacing(10)
+        
         # About Section - get platform info
         import platform
         arch = platform.machine()
@@ -1048,7 +1179,7 @@ class EZpanso(QMainWindow):
         about_content = QLabel(f"""EZpanso v{version} ({arch_display})
  Easy editor for Espanso © {current_year} by Longman""")
         about_content.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        about_content.setStyleSheet("color: #666; font-size: 11px; line-height: 1.4;")
+        about_content.setStyleSheet(ABOUT_LABEL_STYLE)
         layout.addWidget(about_content)
         
         # Add stretch before buttons
@@ -1137,7 +1268,7 @@ class EZpanso(QMainWindow):
         
         # Warning icon
         icon_label = QLabel("⚠️")
-        icon_label.setStyleSheet("font-size: 32px; color: #ff9500;")
+        icon_label.setStyleSheet(WARNING_ICON_STYLE)
         icon_label.setAlignment(Qt.AlignmentFlag.AlignTop)
         message_layout.addWidget(icon_label)
         
@@ -1152,43 +1283,14 @@ class EZpanso(QMainWindow):
         )
         warning_text.setWordWrap(True)
         warning_text.setTextFormat(Qt.TextFormat.RichText)
-        warning_text.setStyleSheet("""
-            QLabel {
-                padding: 15px;
-                background-color: #fff3cd;
-                border: 1px solid #ffeaa7;
-                border-radius: 6px;
-                line-height: 1.6;
-            }
-        """)
+        warning_text.setStyleSheet(WARNING_TEXT_BACKGROUND_STYLE)
         message_layout.addWidget(warning_text, 1)
         
         layout.addLayout(message_layout)
         
         # "Do not show again" checkbox
         self.dont_show_checkbox = QCheckBox("Do not show this warning again")
-        self.dont_show_checkbox.setStyleSheet("""
-            QCheckBox {
-                font-size: 12px;
-                color: #666;
-                padding: 5px;
-            }
-            QCheckBox::indicator {
-                width: 16px;
-                height: 16px;
-            }
-            QCheckBox::indicator:unchecked {
-                border: 1px solid #ccc;
-                border-radius: 3px;
-                background-color: white;
-            }
-            QCheckBox::indicator:checked {
-                border: 1px solid #007acc;
-                border-radius: 3px;
-                background-color: #007acc;
-                image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEzLjg1IDQuMTVMMTAuNSA3LjVMNy4xNSA0LjE1TDguNSAyLjhMMTAuNSA0LjhMMTIuNSAyLjhMMTMuODUgNC4xNVoiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPg==);
-            }
-        """)
+        self.dont_show_checkbox.setStyleSheet(CHECKBOX_STYLE)
         layout.addWidget(self.dont_show_checkbox)
         
         # Button layout
@@ -1196,25 +1298,7 @@ class EZpanso(QMainWindow):
         button_layout.addStretch()
         
         ok_btn = QPushButton("Continue")
-        ok_btn.setStyleSheet("""
-            QPushButton {
-                padding: 10px 20px;
-                font-size: 12px;
-                font-weight: bold;
-                border: 1px solid #ff9500;
-                border-radius: 4px;
-                background-color: #ff9500; 
-                color: white;
-                min-width: 100px;
-            }
-            QPushButton:hover {
-                background-color: #e6840e;
-                border-color: #e6840e;
-            }
-            QPushButton:pressed {
-                background-color: #cc7300;
-            }
-        """)
+        ok_btn.setStyleSheet(WARNING_BUTTON_STYLE)
         ok_btn.clicked.connect(dialog.accept)
         ok_btn.setDefault(True)
         button_layout.addWidget(ok_btn)
@@ -1257,18 +1341,7 @@ class EZpanso(QMainWindow):
             if has_changes:
                 self.save_btn.setStyleSheet(self.primary_button_style)
             else:
-                gray_style = """
-                    QPushButton {
-                        padding: 4px 8px;
-                        font-size: 11px;
-                        border: 1px solid #ccc;
-                        border-radius: 2px;
-                        background-color: #f5f5f5;
-                        color: #999;
-                        min-width: 60px;
-                    }
-                """
-                self.save_btn.setStyleSheet(gray_style)
+                self.save_btn.setStyleSheet(DISABLED_BUTTON_STYLE)
 
     def _check_unsaved_changes_before_switch(self, target_display_name: str) -> bool:
         """Check for unsaved changes before switching files. Returns True if switch should proceed."""
@@ -1312,7 +1385,7 @@ def main():
     app.setOrganizationName("EZpanso")
     
     # Set version for the application
-    app.setApplicationVersion("1.2.0")
+    app.setApplicationVersion("1.2.1")
     
     # Set application icon globally
     icon_path = os.path.join(os.path.dirname(__file__), 'icon_512x512.png')

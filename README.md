@@ -8,13 +8,21 @@ A minimal GUI app for managing your [Espanso](https://espanso.org/) text expansi
 
 https://github.com/user-attachments/assets/774fa2c8-ad27-42ca-85c5-8342e2a99802
 
-## 🆕 Update v1.2.0 (Jun 03, 2025)
+## 🆕 Update v1.2.1 (Jun 17, 2025)
 
-### ✨ Important
+### 🔧 Bug Fixes
+
+- **🎯 File Loading Robustness** - Fixed critical issue where files with empty matches were not displayed in the UI dropdown
+- **📱 UI Population** - Enhanced file loading to ensure all valid Espanso YAML files appear in the file selector
+- **🔧 Initialization Order** - Improved startup sequence to handle edge cases in file loading and UI population
+
+### 🍎 Previous Update v1.2.0 (Jun 03, 2025)
+
+#### ✨ Important
 
 - **📝 YAML Formatting** - Enhanced YAML output formatting to avoid unnecessary double quotes.
 
-### 🔧 Improvements
+#### 🔧 Improvements
 
 - **📂 Open File Button** - Added "Open" button to open the current file for advanced editing in your system's default editor. `Cmd+O` (macOS) / `Ctrl+O
 - **🔧 Unified Preferences** - Consolidated Match Folder Path Setting, info and links into a single Preferences dialog
@@ -61,8 +69,8 @@ https://github.com/user-attachments/assets/774fa2c8-ad27-42ca-85c5-8342e2a99802
 ### macOS (Recommended)
 
 1. Download the appropriate installer for your Mac:
-   - **Intel Macs**: Download `EZpanso-1.2.0-Intel.dmg`
-   - **Apple Silicon Macs**: Download `EZpanso-1.2.0-AppleSilicon.dmg`
+   - **Intel Macs**: Download `EZpanso-1.2.1-Intel.dmg`
+   - **Apple Silicon Macs**: Download `EZpanso-1.2.1-AppleSilicon.dmg`
    - Available from [Releases](https://github.com/luklongman/EZpanso/releases)
 2. Open the DMG and drag EZpanso to Applications
 3. Launch EZpanso from Launchpad or Applications folder

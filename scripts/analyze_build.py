@@ -73,7 +73,7 @@ def compare_with_previous():
                 result = subprocess.run(['du', '-sh', str(app_path)], capture_output=True, text=True)
                 if result.returncode == 0:
                     current_size = result.stdout.strip().split('\t')[0]
-                    print(f"   v1.2.0 App: {current_size}")
+                    print(f"   v1.2.1 App: {current_size}")
 
 def show_optimization_tips():
     """Show additional optimization tips."""
