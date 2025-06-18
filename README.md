@@ -33,7 +33,7 @@ https://github.com/user-attachments/assets/774fa2c8-ad27-42ca-85c5-8342e2a99802
 #### macOS Compatibility Fixed
 
 - **Universal Binary Support** - Fixed "application is not supported on this Mac" error by building universal binary for both Intel and Apple Silicon architectures
-- **Full macOS Support** - Now works on all Mac systems including older Intel Macs and new Apple Silicon Macs
+- **Full macOS Support** - Now works on both Intel and Apple Silicon Macs
 
 #### Bug Fixes
 
