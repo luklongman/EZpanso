@@ -20,9 +20,9 @@ https://github.com/user-attachments/assets/89aba5da-6636-417d-a75f-37485189e83b
 | **Support Multi-line** | Use `\n` for line breaks and `\t` for tabs |  |  | |
 | **Delete** | Remove matches safely with confirmation dialogs | Delete | Backspace | |
 | **Protect Dynamic Matches** | Display matches with variables or conditions in gray and prevent editing |  |  | 1.1.0+ |
-| **Preserve YAML** | Maintain original YAML structure and comments thanks to ruamel.yaml | ⌘+S | Ctrl+S | 1.2.1+ |
-| **Access YAML** | Open current YAML file for advanced editing | ⌘+O | Ctrl+O | 1.2.0+ |
-| **Refresh Data** | Update files and entries after save | ⌘+R | Ctrl+R | 1.2.1+ |
+| **Access file** | Open current YAML file for advanced editing | ⌘+O | Ctrl+O | 1.2.0+ |
+| **Save** | Maintain original YAML structure and comments thanks to ruamel.yaml | ⌘+S | Ctrl+S | 1.2.1+ |
+| **Refresh Data** | Update files and entries after save or manually | ⌘+R | Ctrl+R | 1.2.1+ |
 | **Warn About Packages** | Show warning dialog when editing package files |  |  | 1.2.0+ |
 
 ## 📥 Installation
