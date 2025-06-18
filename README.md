@@ -8,9 +8,9 @@
 </div>
 <br clear="all" />
 
-      <img src="https://github.com/user-attachments/assets/774fa2c8-ad27-42ca-85c5-8342e2a99802" width="100%" alt="EZpanso Editing View">
 
-![EZpanso 1.2.1](https://github.com/user-attachments/assets/095825d4-de9b-44d4-b5dc-21d05da3040a)
+https://github.com/user-attachments/assets/89aba5da-6636-417d-a75f-37485189e83b
+
 
 ## ✨ Features
 
