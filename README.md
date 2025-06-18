@@ -8,43 +8,32 @@
 </div>
 <br clear="all" />
 
-
 https://github.com/user-attachments/assets/89aba5da-6636-417d-a75f-37485189e83b
 
+## Features
 
-## ✨ Features
-
-- **Open Match Files** - Espanso match files and packages at default or custom folderpath.
-- **Find & Sort** - Quick filter and sortable columns
-- **Edit** - In-place editing for simple matches with full undo/redo support
-- **Create** - Make new matches with duplicate prevention
-- **Delete** - Safe deletion with confirmation dialogs
-- **Multi-line Replacement** - Support `\n` for line breaks and `\t` for tabs
-- **Save** - Preserve original YAML structure and comments *(with **ruamel.yaml** in v1.2.1)*
-- **Dynamic Match Protection** - Matches with variables or conditions are shown in gray and not editable
-- **Package Safety** - Warning dialog when editing package files
-
-## ⚡ Keyboard Shortcuts
-
-- `Cmd+N` (macOS) / `Ctrl+N` - New match
-- `Cmd+S` (macOS) / `Ctrl+S` - Save all changes  
-- `Cmd+F` (macOS) / `Ctrl+F` - Find matches
-- `Cmd+Z` (macOS) / `Ctrl+Z` - Undo
-- `Cmd+Shift+Z` (macOS) / `Ctrl+Y` - *Redo*
-- `Delete` / `Backspace` - Delete selected matches
-- `Cmd+O` (macOS) / `Ctrl+O` - Open current file for advanced editing *(Added in v1.2.0)*
-- `Cmd+R` (macOS) / `Ctrl+R` - Refresh files and entries *(Added in v1.2.1)*
+| User flow | description | macOS | Windows/Linux | Version |
+|------|-------------|-------|---------------|---------|
+| **Auto-Load** | Auto-Load Espanso match files and packages at default folder path |  |  | |
+| **Locate** | Or customize folder path at settings| ⌘+, | Ctrl+, | 1.2.0+ |
+| **Find & Sort** | Filter quickly and view table with sortable columns | ⌘+F | Ctrl+F | |
+| **Edit Simple Matches** | Edit in place with undo/redo support | ⌘+Z / ⇧⌘+Z | Ctrl+Z / Ctrl+Y | |
+| **Create** | Add new matches with duplicate detection | ⌘+N | Ctrl+N | |
+| **Support Multi-line** | Use `\n` for line breaks and `\t` for tabs |  |  | |
+| **Delete** | Remove matches safely with confirmation dialogs | Delete | Backspace | |
+| **Protect Dynamic Matches** | Display matches with variables or conditions in gray and prevent editing |  |  | 1.1.0+ |
+| **Preserve YAML** | Maintain original YAML structure and comments thanks to ruamel.yaml | ⌘+S | Ctrl+S | 1.2.1+ |
+| **Access YAML** | Open current YAML file for advanced editing | ⌘+O | Ctrl+O | 1.2.0+ |
+| **Refresh Data** | Update files and entries after save | ⌘+R | Ctrl+R | 1.2.1+ |
+| **Warn About Packages** | Show warning dialog when editing package files |  |  | 1.2.0+ |
 
 ## 📥 Installation
 
 ### macOS (Apple Silicon)
 
-1. Download the Apple Silicon DMG: `EZpanso-1.2.1-arm64.dmg`
-   - Available from [Releases](https://github.com/luklongman/EZpanso/releases)
+1. Download `EZpanso-1.2.1-arm64.dmg` from [Releases](https://github.com/luklongman/EZpanso/releases)
 2. Open the DMG and drag EZpanso to Applications
-3. Launch EZpanso from Launchpad or Applications folder
-
-> **⚠️ macOS Security Notice**: If you see **"EZpanso is damaged and can't be opened"**, this is a normal macOS security warning for unsigned apps. See our [macOS Gatekeeper Workaround Guide](docs/MACOS_GATEKEEPER_WORKAROUND.md) for easy solutions.
+3. Launch EZpanso
 
 ### All Platforms (Python Installation)
 
@@ -69,16 +58,16 @@ poetry run python main.py
 - PyQt6
 - PyYAML
 - ruamel.yaml *(Added in v1.2.1 for comment preservation)*
- 
-## 🔧 Configuration
 
-EZpanso automatically finds your Espanso directory:
+### 🔧 Configuration
+
+By default, EZpanso finds your Espanso directory at:
 
 - **macOS**: `~/Library/Application Support/espanso/match`
 - **Linux**: `~/.config/espanso/match`
 - **Windows**: `%APPDATA%\espanso\match`
 
-To use a custom directory, go to menubar for **Set Folder**.
+To customize the folder path, go to settings.
 
 ### Espanso File Format
 
@@ -92,44 +81,9 @@ matches:
     replace: "user@example.com"
 ```
 
-## 🛡️ Safety Reminder
+### 🛡️ Safety Reminder
 
 Although there are confirmations for save and delete operations, it's highly recommended to backup your Espanso configuration before making significant changes.
-
-## 🏗️ Development
-
-### Quick Start
-
-```bash
-git clone https://github.com/luklongman/EZpanso.git
-cd EZpanso
-poetry install
-
-# Run in development
-poetry run python main.py
-```
-
-### Building
-
-```bash
-# Build for Apple Silicon (full features including comment preservation)
-./build_apple_silicon.sh
-```
-
-### Development Scripts
-
-```bash
-# Clean build artifacts
-python scripts/cleanup.py
-
-# Analyze build size
-python scripts/analyze_build.py
-
-# Run tests
-pytest test.py -v
-```
-
-For detailed development information, see [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ### Architecture
 
@@ -141,7 +95,7 @@ EZpanso follows a simple and monolithic architecture:
 
 ## 🤝 Contributing
 
-EZpanso is pretty much done and I've learnt a lot. I am happy to revisit when major update is required. I hope the python installation is good enough for Windows and Linux users! Feel free to contribute, submit issues and pull requests.
+EZpanso is pretty much done and I've learnt a lot. I am happy to revisit when major update is required. I hope the python installation is good enough for non Apple Silicon users. Feel free to contribute, submit issues and pull requests.
 
 ## ⚖️ License
 
@@ -153,5 +107,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [EspansoEdit](https://ee.qqv.com.au/) - Windows Freeware editor and utility suite for Espanso by [EeAdmin](https://www.reddit.com/user/EeAdmin/), who provided valuable feedback upon inital release
 - [PyQt6](https://riverbankcomputing.com/software/pyqt/) - Python GUI framework
 - [PyYAML](https://pyyaml.org/) - For YAML handling
+- [ruamel.yaml](yaml.dev/doc/ruamel.yaml/) - Preserve YAML comments.
 
 **by [Longman](https://www.instagram.com/l.ongman) • June 2025**
