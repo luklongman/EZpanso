@@ -1,25 +1,28 @@
 # EZpanso - Easy editor for Espanso
 
-![EZpanso-icon](https://github.com/user-attachments/assets/cb893176-d625-42fd-b332-e72b8827cec4)
-
-A minimal GUI app for managing your [Espanso](https://espanso.org/) text expansion matches, particularly useful for looking up and editing simple matches across YAML files. Built with PyQt6 & PyYAML/ ruamel.yaml . DMG available for MacOS. Python installation available across platforms.
+<div>
+  <img src="https://github.com/user-attachments/assets/cb893176-d625-42fd-b332-e72b8827cec4" alt="EZpanso-icon" width="120" align="left" style="margin-right: 20px;" />
+  <div style="padding-left: 20px;">
+    <p>A minimal GUI app for managing your <a href="https://espanso.org/">Espanso</a> text expansion matches, particularly useful for looking up and editing simple matches across YAML files. Built with PyQt6 & PyYAML/ruamel.yaml. DMG available for Apple Silicon MacOS. Python installation available across platforms. Visit <a href="CHANGELOG.md">CHANGELOG.md</a> for detailed release notes.</p>
+  </div>
+</div>
+<br clear="all" />
 
 <https://github.com/user-attachments/assets/774fa2c8-ad27-42ca-85c5-8342e2a99802>
 
 ## ✨ Features
 
-- **📂 Open Match Files** - Espanso match files and packages at default or custom folderpath.
-- **🔍 Find & Sort** - Quick filter and sortable columns
-- **📄 Multi-line Replacement** - Support `\n` for line breaks and `\t` for tabs
-- **✏️ Edit** - In-place editing for simple matches with full undo/redo support
-- **🆕 Create** - Make new matches with duplicate prevention
-- **🗑️ Delete** - Safe deletion with confirmation dialogs
-- **💾 Save** - Preserve original YAML structure and comments
-- **🛡️ Dynamic Match Protection** - Matches with variables or conditions are shown in gray and not editable
-- **⚠️ Package Safety** - Warning dialog when editing package files with option to disable
-- **🌍 Multi-platform** - Works on macOS, Linux, and Windows
+- **Open Match Files** - Espanso match files and packages at default or custom folderpath.
+- **Find & Sort** - Quick filter and sortable columns
+- **Edit** - In-place editing for simple matches with full undo/redo support
+- **Create** - Make new matches with duplicate prevention
+- **Delete** - Safe deletion with confirmation dialogs
+- **Multi-line Replacement** - Support `\n` for line breaks and `\t` for tabs
+- **Save** - Preserve original YAML structure and comments *(with **ruamel.yaml** in v1.2.1)*
+- **Dynamic Match Protection** - Matches with variables or conditions are shown in gray and not editable
+- **Package Safety** - Warning dialog when editing package files
 
-### ⚡ Keyboard Shortcuts
+## ⚡ Keyboard Shortcuts
 
 - `Cmd+N` (macOS) / `Ctrl+N` - New match
 - `Cmd+S` (macOS) / `Ctrl+S` - Save all changes  
@@ -27,7 +30,8 @@ A minimal GUI app for managing your [Espanso](https://espanso.org/) text expansi
 - `Cmd+Z` (macOS) / `Ctrl+Z` - Undo
 - `Cmd+Shift+Z` (macOS) / `Ctrl+Y` - *Redo*
 - `Delete` / `Backspace` - Delete selected matches
-- `Cmd+O` (macOS) / `Ctrl+O` - Open current file for advanced editing
+- `Cmd+O` (macOS) / `Ctrl+O` - Open current file for advanced editing *(Added in v1.2.0)*
+- `Cmd+R` (macOS) / `Ctrl+R` - Refresh files and entries *(Added in v1.2.1)*
 
 ## 📥 Installation
 
