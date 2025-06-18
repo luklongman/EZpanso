@@ -10,6 +10,10 @@
 
 <https://github.com/user-attachments/assets/774fa2c8-ad27-42ca-85c5-8342e2a99802>
 
+
+https://github.com/user-attachments/assets/a1ed9e8f-bfbc-4030-9d3e-31d06381a880
+
+
 ## ✨ Features
 
 - **Open Match Files** - Espanso match files and packages at default or custom folderpath.
