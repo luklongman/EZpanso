@@ -76,6 +76,7 @@ This project follows **PEP 8** (Python Enhancement Proposal 8) as the primary co
 ## Code Quality Guidelines
 
 ### Testing
+- Test files are located at `tests/`
 - Write unit tests for critical business logic
 - Mock external dependencies (file system, settings)
 - Test edge cases and error conditions

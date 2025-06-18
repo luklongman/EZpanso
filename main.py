@@ -1160,24 +1160,15 @@ class EZpanso(QMainWindow):
         layout.addLayout(folder_input_layout)
         
         # Add spacing
-        layout.addSpacing(15)
-        
-        # Comment Preservation Info
-        backend_info = f"YAML Backend: {self.yaml_handler.backend}"
-        comment_info = QLabel(backend_info)
-        comment_info.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        comment_info.setStyleSheet(INFO_LABEL_MULTILINE_STYLE)
-        layout.addWidget(comment_info)
-        
-        # Add spacing
-        layout.addSpacing(10)
+        layout.addSpacing(5)
         
         # About Section - get platform info
         import platform
         arch = platform.machine()
-        arch_display = "Apple Silicon" if arch == "arm64" else "Intel" if arch == "x86_64" else arch
+        arch_display = "Apple Silicon" if arch == "arm64" else arch
         
         about_content = QLabel(f"""EZpanso v{version} ({arch_display})
+ YAML Backend: {self.yaml_handler.backend}
  Easy editor for Espanso © {current_year} by Longman""")
         about_content.setAlignment(Qt.AlignmentFlag.AlignCenter)
         about_content.setStyleSheet(ABOUT_LABEL_STYLE)

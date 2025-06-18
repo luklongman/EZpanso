@@ -24,6 +24,11 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# Poetry - Only ignore local poetry config files
+poetry.toml
+.poetry/
+poetry/
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
@@ -127,8 +132,19 @@ cython_debug/
 # VS Code
 .vscode/
 
+# JetBrains / PyCharm
+.idea/
+*.iml
+*.iws
+*.ipr
+*.iws
+.idea_modules/
+
 # macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+Icon
 
 # Release artifacts (keep local, don't commit to main branch)
 *.dmg
@@ -157,3 +173,15 @@ ehthumbs.db
 
 # Logs
 *.log
+
+# PyQt6 compiled UI files
+# Only ignore these if you generate them during build
+# Uncomment if your workflow regenerates these files
+# *_ui.py
+# *_rc.py
+
+# ruamel.yaml cache
+.ruamel
+
+# GitHub workflow directories should be version controlled
+# (Don't add .github/ to gitignore as it contains important workflows)

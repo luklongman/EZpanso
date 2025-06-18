@@ -2,32 +2,9 @@
 
 ## Issues Fixed
 
-### Bug 1: TSM Error on Multi-Row Deletion
-
-**Problem**: When selecting multiple entries and deleting them, terminal showed error:
-
-```
-Python [] TSMSendMessageToUIServer: CFMessagePortSendRequest FAILED(-1) to send to port com.apple.tsm.uiserver
-```
-
-**Root Cause**: After deletion, the table selection model still referenced old row indices that no longer existed after the data changes and table repopulation. This caused PyQt's Table Selection Model (TSM) to fail when trying to access non-existent rows.
-
-**Additional Issue**: TSM errors also occurred during save confirmation dialogs when table selections were active, due to macOS Qt messaging conflicts.
-
-**Solution**:
-
-1. Added `self.table.clearSelection()` before refreshing the table in `_delete_snippets_by_triggers()`
-2. Added `self.table.clearSelection()` before showing save confirmation dialogs in `_save_all_with_confirmation()` and `closeEvent()`
-
-**Files Changed**:
-
-- `main.py` lines 559-562: Added table selection clearing before refresh in deletion
-- `main.py` lines 720-722: Added table selection clearing before save confirmation dialog  
-- `main.py` lines 1049-1051: Added table selection clearing before close confirmation dialog
-
 ### Bug 2: Table Mismatch After In-Place Editing
 
-**Problem**: After in-pla3ce editing a cell, the table would refresh/reorganize and mismatches between trigger and replace values were found due to rows moving to different positions.
+**Problem**: After in-place editing a cell, the table would refresh/reorganize and mismatches between trigger and replace values were found due to rows moving to different positions.
 
 **Root Cause**: After in-place editing, `_on_item_changed()` called `_mark_modified_and_refresh()` which completely rebuilt and reordered the table. This caused the edited row to potentially move to a different position, breaking the visual connection between what the user edited and the result.
 

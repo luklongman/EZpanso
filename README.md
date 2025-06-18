@@ -6,42 +6,6 @@ A minimal GUI app for managing your [Espanso](https://espanso.org/) text expansi
 
 <https://github.com/user-attachments/assets/774fa2c8-ad27-42ca-85c5-8342e2a99802>
 
-## 🆕 Update v1.2.1 (Jun 17, 2025)
-
-### 🔧 Bug Fixes
-
-- **🎯 File Loading Robustness** - Fixed critical issue where files with empty matches were not displayed in the UI dropdown
-- **📱 UI Population** - Enhanced file loading to ensure all valid Espanso YAML files appear in the file selector
-- **🔧 Initialization Order** - Improved startup sequence to handle edge cases in file loading and UI population
-
-### Improvements
-
-- **🔄 Refresh Button** - Added refresh button to reload the file list
-
-### 🍎 Previous Update v1.2.0 (Jun 03, 2025)
-
-#### ✨ Important
-
-- **📝 YAML Formatting** - Enhanced YAML output formatting to avoid unnecessary double quotes.
-
-#### 🔧 Improvements
-
-- **📂 Open File Button** - Added "Open" button to open the current file for advanced editing in your system's default editor. `Cmd+O` (macOS) / `Ctrl+O
-- **🔧 Unified Preferences** - Consolidated Match Folder Path Setting, info and links into a single Preferences dialog
-- 🔄 Better UX/UI in general
-
-### 🍎 Previous Update v1.1 (Jun 02, 2025)
-
-#### macOS Compatibility Fixed
-
-- **Universal Binary Support** - Fixed "application is not supported on this Mac" error by building universal binary for both Intel and Apple Silicon architectures
-- **Full macOS Support** - Now works on both Intel and Apple Silicon Macs
-
-#### Bug Fixes
-
-- Fixed dialog workflow for creating new matches with validation errors
-- Improved file modification tracking for better save operations
-- Enhanced user experience when dealing with duplicate triggers or empty fields
 
 ## ✨ Features
 
@@ -68,42 +32,40 @@ A minimal GUI app for managing your [Espanso](https://espanso.org/) text expansi
 
 ## 📥 Installation
 
-### macOS (Recommended)
+### macOS (Apple Silicon)
 
-1. Download the appropriate installer for your Mac:
-   - **Intel Macs**: Download `EZpanso-1.2.1-Intel.dmg`
-   - **Apple Silicon Macs**: Download `EZpanso-1.2.1-AppleSilicon.dmg`
+1. Download the Apple Silicon DMG: `EZpanso-1.2.1-arm64.dmg`
    - Available from [Releases](https://github.com/luklongman/EZpanso/releases)
 2. Open the DMG and drag EZpanso to Applications
 3. Launch EZpanso from Launchpad or Applications folder
 
 > **⚠️ macOS Security Notice**: If you see **"EZpanso is damaged and can't be opened"**, this is a normal macOS security warning for unsigned apps. See our [macOS Gatekeeper Workaround Guide](docs/MACOS_GATEKEEPER_WORKAROUND.md) for easy solutions.
 
-> **📋 Architecture-Specific Limitations**:
->
-> - **Apple Silicon version**: Full functionality including YAML comment preservation
-> - **Intel version**: Core functionality only - **YAML comments are NOT preserved** due to cross-compilation constraints from Apple Silicon to Intel architecture
->
-> **Reason**: The Intel build cannot use compiled YAML extensions (ruamel.yaml) when cross-compiled from Apple Silicon, limiting it to basic PyYAML functionality.
-
-> **Note**: Both versions install as "EZpanso.app" but are optimized for their respective architectures. The architecture is shown in the app's Preferences dialog.
-
-### Cross-Platform (Python)
+### All Platforms (pip installation)
 
 **Requirements:** Python 3.11+
 
 ```bash
-# 1. Clone the repository
+# Install directly from pip (recommended)
+pip install ezpanso
+
+# Run the application
+ezpanso
+```
+
+Alternatively, install from source:
+
+```bash
+# Clone the repository
 git clone https://github.com/luklongman/EZpanso.git
 cd EZpanso
 
-# 2a. Install dependencies and run with pip
-pip install -r requirements.txt
-python main.py
+# Install with pip
+pip install -e .
 
-# 2b. Or with Poetry 
+# Or with Poetry 
 poetry install
-poetry run python main.py
+poetry run ezpanso
 ```
 
 **Dependencies:**
@@ -155,12 +117,7 @@ poetry run python main.py
 ```bash
 # Build for Apple Silicon (full features including comment preservation)
 ./build_apple_silicon.sh
-
-# Build for Intel (limited features - no comment preservation)
-./build_intel.sh
 ```
-
-> **Important**: Intel builds from Apple Silicon machines have limitations due to cross-compilation constraints. The Intel build excludes ruamel.yaml and thus cannot preserve YAML comments.
 
 ### Development Scripts
 
