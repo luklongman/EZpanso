@@ -1,5 +1,9 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+# EZpanso Intel (x86_64) Build Specification
+# This build now includes ruamel.yaml for YAML comment preservation
+# Modern Python packaging supports cross-architecture installation
+
 import os
 import sys
 

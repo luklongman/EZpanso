@@ -4,7 +4,7 @@
 
 <img src="https://github.com/user-attachments/assets/171a0cfc-f1e6-4070-94a0-eb83ef7c1163" alt="icon_512x512@2x" width="25%" />
 
-A minimal GUI app for managing your [Espanso](https://espanso.org/) text expansion matches, particularly useful for looking up and editing simple matches across YAML files. Built with PyYAML & PyQt6. DMG available for MacOS. Python installation available across platforms.
+A minimal GUI app for managing your [Espanso](https://espanso.org/) text expansion matches, particularly useful for looking up and editing simple matches across YAML files. Built with PyQt6 & PyYAML/ ruamel.yaml . DMG available for MacOS. Python installation available across platforms.
 
 <https://github.com/user-attachments/assets/774fa2c8-ad27-42ca-85c5-8342e2a99802>
 
@@ -81,6 +81,13 @@ A minimal GUI app for managing your [Espanso](https://espanso.org/) text expansi
 
 > **⚠️ macOS Security Notice**: If you see **"EZpanso is damaged and can't be opened"**, this is a normal macOS security warning for unsigned apps. See our [macOS Gatekeeper Workaround Guide](docs/MACOS_GATEKEEPER_WORKAROUND.md) for easy solutions.
 
+> **📋 Architecture-Specific Limitations**:
+>
+> - **Apple Silicon version**: Full functionality including YAML comment preservation
+> - **Intel version**: Core functionality only - **YAML comments are NOT preserved** due to cross-compilation constraints from Apple Silicon to Intel architecture
+>
+> **Reason**: The Intel build cannot use compiled YAML extensions (ruamel.yaml) when cross-compiled from Apple Silicon, limiting it to basic PyYAML functionality.
+
 > **Note**: Both versions install as "EZpanso.app" but are optimized for their respective architectures. The architecture is shown in the app's Preferences dialog.
 
 ### Cross-Platform (Python)
@@ -148,12 +155,14 @@ poetry run python main.py
 ### Building
 
 ```bash
-# Build for current architecture (recommended for individual users)
-./build_current_arch.sh
+# Build for Apple Silicon (full features including comment preservation)
+./build_apple_silicon.sh
 
-# Build for both architectures (for maintainers/distribution)
-./build_multi_arch.sh
+# Build for Intel (limited features - no comment preservation)
+./build_intel.sh
 ```
+
+> **Important**: Intel builds from Apple Silicon machines have limitations due to cross-compilation constraints. The Intel build excludes ruamel.yaml and thus cannot preserve YAML comments.
 
 ### Development Scripts
 

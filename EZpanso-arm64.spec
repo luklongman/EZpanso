@@ -1,5 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+# EZpanso Apple Silicon (arm64) Build Specification
+# This build includes full functionality including YAML comment preservation
+
 import os
 import sys
 
