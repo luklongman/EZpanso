@@ -19,9 +19,14 @@ echo "🚀 Building EZpanso for macOS ($ARCH_NAME)..."
 
 # Run cleanup script first
 echo "🧹 Running project cleanup..."
-python3 scripts/cleanup.py
+if [ -f "scripts/cleanup.py" ]; then
+    python3 scripts/cleanup.py
+else
+    echo "   Cleanup script not found, cleaning manually..."
+    rm -rf build/ dist/ *.dmg __pycache__/ **/__pycache__/ *.pyc **/*.pyc
+fi
 
-# Clean previous builds (redundant after cleanup but ensures clean slate)
+# Clean previous builds (ensure clean slate)
 echo "🗑️  Ensuring clean build environment..."
 rm -rf build/ dist/ *.dmg
 

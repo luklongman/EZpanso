@@ -1,12 +1,12 @@
 # EZpanso
 
-**Easy editor for Espanso**
+## Easy editor for Espanso
 
 <img src="https://github.com/user-attachments/assets/171a0cfc-f1e6-4070-94a0-eb83ef7c1163" alt="icon_512x512@2x" width="25%" />
 
 A minimal GUI app for managing your [Espanso](https://espanso.org/) text expansion matches, particularly useful for looking up and editing simple matches across YAML files. Built with PyYAML & PyQt6. DMG available for MacOS. Python installation available across platforms.
 
-https://github.com/user-attachments/assets/774fa2c8-ad27-42ca-85c5-8342e2a99802
+<https://github.com/user-attachments/assets/774fa2c8-ad27-42ca-85c5-8342e2a99802>
 
 ## 🆕 Update v1.2.1 (Jun 17, 2025)
 
@@ -15,6 +15,10 @@ https://github.com/user-attachments/assets/774fa2c8-ad27-42ca-85c5-8342e2a99802
 - **🎯 File Loading Robustness** - Fixed critical issue where files with empty matches were not displayed in the UI dropdown
 - **📱 UI Population** - Enhanced file loading to ensure all valid Espanso YAML files appear in the file selector
 - **🔧 Initialization Order** - Improved startup sequence to handle edge cases in file loading and UI population
+
+### Improvements
+
+- **🔄 Refresh Button** - Added refresh button to reload the file list
 
 ### 🍎 Previous Update v1.2.0 (Jun 03, 2025)
 
@@ -74,6 +78,8 @@ https://github.com/user-attachments/assets/774fa2c8-ad27-42ca-85c5-8342e2a99802
    - Available from [Releases](https://github.com/luklongman/EZpanso/releases)
 2. Open the DMG and drag EZpanso to Applications
 3. Launch EZpanso from Launchpad or Applications folder
+
+> **⚠️ macOS Security Notice**: If you see **"EZpanso is damaged and can't be opened"**, this is a normal macOS security warning for unsigned apps. See our [macOS Gatekeeper Workaround Guide](docs/MACOS_GATEKEEPER_WORKAROUND.md) for easy solutions.
 
 > **Note**: Both versions install as "EZpanso.app" but are optimized for their respective architectures. The architecture is shown in the app's Preferences dialog.
 

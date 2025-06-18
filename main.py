@@ -35,6 +35,7 @@ from styles import (
 FileData = Dict[str, List[Dict[str, Any]]]  # file_path -> list of match dictionaries
 
 # Constants
+APP_VERSION = "1.2.1"
 MAX_UNDO_STEPS = 50
 DEFAULT_WINDOW_SIZE = (600, 800)
 ICON_FILENAME = "icon_512x512.png"
@@ -60,7 +61,7 @@ class EZpanso(QMainWindow):
     
     def _initialize_window(self) -> None:
         """Initialize basic window properties."""
-        self.setWindowTitle("EZpanso")
+        self.setWindowTitle(f"EZpanso v{APP_VERSION}")
         self.resize(*DEFAULT_WINDOW_SIZE)
         
         # Initialize style constants as instance attributes
@@ -809,7 +810,7 @@ class EZpanso(QMainWindow):
     
     def _update_title(self):
         """Update window title with modification indicator."""
-        base_title = "EZpanso"
+        base_title = f"EZpanso v{APP_VERSION}"
         self.setWindowTitle(f"{base_title}{' *' if self.is_modified else ''}")
     
     def _add_new_snippet(self):
@@ -1133,7 +1134,7 @@ class EZpanso(QMainWindow):
         layout.setContentsMargins(20, 20, 20, 20)
         
         # Get version and current year
-        version = getattr(self, 'app_version', '1.2.1')
+        version = APP_VERSION
         current_year = __import__('datetime').datetime.now().year
         
         # Settings Section
@@ -1385,7 +1386,7 @@ def main():
     app.setOrganizationName("EZpanso")
     
     # Set version for the application
-    app.setApplicationVersion("1.2.1")
+    app.setApplicationVersion(APP_VERSION)
     
     # Set application icon globally
     icon_path = os.path.join(os.path.dirname(__file__), 'icon_512x512.png')

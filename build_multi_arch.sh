@@ -46,7 +46,12 @@ create_dmg_for_arch() {
 
 # Run cleanup script first
 echo "🧹 Running project cleanup..."
-python3 scripts/cleanup.py
+if [ -f "scripts/cleanup.py" ]; then
+    python3 scripts/cleanup.py
+else
+    echo "   Cleanup script not found, cleaning manually..."
+    rm -rf build/ dist/ *.dmg __pycache__/ **/__pycache__/ *.pyc **/*.pyc
+fi
 
 # Clean previous builds
 echo "🗑️  Ensuring clean build environment..."
@@ -89,6 +94,28 @@ echo "✅ Apple Silicon app bundle created successfully!"
 echo "📊 Build size analysis:"
 echo "   Intel app bundle: $(du -sh dist/EZpanso-Intel.app | cut -f1)"
 echo "   Apple Silicon app bundle: $(du -sh dist/EZpanso-AppleSilicon.app | cut -f1)"
+
+# Prepare apps for distribution (without paid code signing)
+echo "� Preparing apps for macOS distribution..."
+
+# Remove problematic extended attributes that trigger Gatekeeper
+echo "   Removing extended attributes..."
+xattr -cr "dist/EZpanso-Intel.app" 2>/dev/null || true
+xattr -cr "dist/EZpanso-AppleSilicon.app" 2>/dev/null || true
+
+# Check if we have a signing identity set (optional)
+if [ -n "$CODESIGN_IDENTITY" ] && [ "$CODESIGN_IDENTITY" != "adhoc" ]; then
+    echo "📝 Using specified signing identity: $CODESIGN_IDENTITY"
+    if [ -f "scripts/codesign_app.sh" ]; then
+        chmod +x scripts/codesign_app.sh
+        scripts/codesign_app.sh "dist/EZpanso-Intel.app" "$CODESIGN_IDENTITY"
+        scripts/codesign_app.sh "dist/EZpanso-AppleSilicon.app" "$CODESIGN_IDENTITY"
+    fi
+else
+    echo "ℹ️  Building without code signing (users may need to bypass Gatekeeper)"
+    echo "   Users can run: sudo xattr -rd com.apple.quarantine /Applications/EZpanso.app"
+    echo "   Or use the provided fix_gatekeeper_issue.sh script"
+fi
 
 # Create DMGs for both architectures
 create_dmg_for_arch "Intel" "EZpanso-Intel.app" "EZpanso-1.2.1-Intel.dmg"
