@@ -13,7 +13,7 @@ https://github.com/user-attachments/assets/89aba5da-6636-417d-a75f-37485189e83b
 ## Features
 
 | User flow | description | macOS | Windows/Linux | Version |
-|------|-------------|-------|---------------|---------|
+|:------|:-------------|:-------|:---------------|:---------|
 | **Auto-Load** | Auto-Load Espanso match files and packages at default folder path |  |  | |
 | **Locate** | Or customize folder path at settings| ⌘+, | Ctrl+, | 1.2.0+ |
 | **Find & Sort** | Filter quickly and view table with sortable columns | ⌘+F | Ctrl+F | |
