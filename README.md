@@ -1,28 +1,16 @@
 # EZpanso - Easy editor for Espanso
 
 <div>
-  <img src="https://github.com/user-attachments/assets/cb893176-d625-42fd-b332-e72b8827cec4" alt="EZpanso-icon" width="120" align="left" style="margin-right: 20px;" />
-  <div style="padding-left: 20px;">
-    <p>A minimal GUI app for managing your <a href="https://espanso.org/">Espanso</a> text expansion matches, particularly useful for looking up and editing simple matches across YAML files. Built with PyQt6 & PyYAML/ruamel.yaml. DMG available for Apple Silicon MacOS. Python installation available across platforms. Visit <a href="CHANGELOG.md">CHANGELOG.md</a> for detailed release notes.</p>
+  <img src="https://github.com/user-attachments/assets/cb893176-d625-42fd-b332-e72b8827cec4" alt="EZpanso-icon" width="160" align="left" style="margin-right: 20px; margin-top: -20px;" />
+  <div>
+    <p style="margin-top: 30px;">A minimal GUI app for managing your <a href="https://espanso.org/">Espanso</a> text expansion matches, particularly useful for looking up and editing simple matches across YAML files. Built with PyQt6 & PyYAML/ruamel.yaml. DMG available for Apple Silicon macOS. Python installation available across platforms. Visit <a href="CHANGELOG.md">CHANGELOG.md</a> for detailed release notes.</p>
   </div>
 </div>
 <br clear="all" />
 
-## Highlights
-
-<div align="center">
-  <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;">
-    <div style="flex: 1; min-width: 300px; max-width: 49%;">
-      <img src="https://github.com/user-attachments/assets/a1ed9e8f-bfbc-4030-9d3e-31d06381a880" width="100%" alt="EZpanso Main Interface">
-      <p align="center"><em>v1.2.1 Updates</em></p>
-    </div>
-    <div style="flex: 1; min-width: 300px; max-width: 49%;">
       <img src="https://github.com/user-attachments/assets/774fa2c8-ad27-42ca-85c5-8342e2a99802" width="100%" alt="EZpanso Editing View">
-      <p align="center"><em>v1.2.0 Updates</em></p>
-    </div>
-  </div>
-</div>
 
+![EZpanso 1.2.1](https://github.com/user-attachments/assets/095825d4-de9b-44d4-b5dc-21d05da3040a)
 
 ## ✨ Features
 
@@ -58,38 +46,30 @@
 
 > **⚠️ macOS Security Notice**: If you see **"EZpanso is damaged and can't be opened"**, this is a normal macOS security warning for unsigned apps. See our [macOS Gatekeeper Workaround Guide](docs/MACOS_GATEKEEPER_WORKAROUND.md) for easy solutions.
 
-### All Platforms (pip installation)
+### All Platforms (Python Installation)
 
 **Requirements:** Python 3.11+
-
-```bash
-# Install directly from pip (recommended)
-pip install ezpanso
-
-# Run the application
-ezpanso
-```
-
-Alternatively, install from source:
 
 ```bash
 # Clone the repository
 git clone https://github.com/luklongman/EZpanso.git
 cd EZpanso
 
-# Install with pip
-pip install -e .
+# Option 1: Install with pip and requirements.txt
+pip install -r requirements.txt
+python main.py
 
-# Or with Poetry 
+# Option 2: Install with Poetry
 poetry install
-poetry run ezpanso
+poetry run python main.py
 ```
 
 **Dependencies:**
 
 - PyQt6
 - PyYAML
-
+- ruamel.yaml *(Added in v1.2.1 for comment preservation)*
+ 
 ## 🔧 Configuration
 
 EZpanso automatically finds your Espanso directory:
