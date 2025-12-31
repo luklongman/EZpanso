@@ -1,8 +1,5 @@
 # EZpanso 1.2.1 - Easy editor for Espanso
 
-<div>
-  <img src="https://github.com/user-attachments/assets/cb893176-d625-42fd-b332-e72b8827cec4" alt="EZpanso-icon" width="160" align="left" style="margin-right: 20px; margin-top: -20px;" />
-  <div>
     <p style="margin-top: 30px;">A minimal GUI app for managing your <a href="https://espanso.org/">Espanso</a> text expansion matches, particularly useful for looking up and editing simple matches across YAML files. Built with PyQt6 & PyYAML/ruamel.yaml. DMG available for Apple Silicon macOS. Python installation available across platforms. Visit <a href="CHANGELOG.md">CHANGELOG.md</a> for detailed release notes.</p>
   </div>
 </div>
