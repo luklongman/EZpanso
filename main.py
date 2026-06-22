@@ -83,6 +83,8 @@ class EZpanso(QMainWindow):
         """Initialize application settings and persistence."""
         self.settings = QSettings("EZpanso", "EZpanso")
         self.custom_espanso_dir = self.settings.value("espanso_dir", "")
+        self.auto_save_enabled = self.settings.value("auto_save", False, type=bool)
+        self.last_file_path = self.settings.value("last_file_path", "")
     
     def _initialize_data_structures(self) -> None:
         """Initialize all data structures used by the application."""
@@ -93,6 +95,7 @@ class EZpanso(QMainWindow):
         self.files_data: FileData = {}  # file_path -> list of match dicts
         self.file_paths: List[str] = []  # ordered list of file paths
         self.display_name_to_path: Dict[str, str] = {}  # display name -> file path mapping
+        self.suppress_file_selection = False
         self.active_file_path: Optional[str] = None
         self.is_modified = False
         self.modified_files: set = set()  # Track which files have been modified
@@ -243,6 +246,12 @@ class EZpanso(QMainWindow):
         refresh_btn.setStyleSheet(BUTTON_STYLE)
         refresh_btn.clicked.connect(self._refresh_all_files)
         bottom_btn_layout.addWidget(refresh_btn)
+
+        self.auto_save_checkbox = QCheckBox("Auto-save")
+        self.auto_save_checkbox.setStyleSheet(CHECKBOX_STYLE)
+        self.auto_save_checkbox.setChecked(bool(self.auto_save_enabled))
+        self.auto_save_checkbox.toggled.connect(self._on_auto_save_toggled)
+        bottom_btn_layout.addWidget(self.auto_save_checkbox)
         
         bottom_btn_layout.addStretch()
         
@@ -256,9 +265,11 @@ class EZpanso(QMainWindow):
         
         # If there are pending display names from early file loading, populate them now
         if hasattr(self, '_pending_display_names'):
+            self.suppress_file_selection = True
             self.file_selector.addItems(self._pending_display_names)
+            self.suppress_file_selection = False
             if self._pending_display_names:
-                self._on_file_selected(self._pending_display_names[0])
+                self._select_initial_file(self._pending_display_names)
             delattr(self, '_pending_display_names')
         
     def _setup_menubar(self):
@@ -330,12 +341,31 @@ class EZpanso(QMainWindow):
         
         # Populate file selector if it exists (UI has been set up)
         if hasattr(self, 'file_selector') and self.file_selector is not None:
+            self.suppress_file_selection = True
             self.file_selector.addItems(display_names)
+            self.suppress_file_selection = False
             if display_names:
-                self._on_file_selected(display_names[0])
+                self._select_initial_file(display_names)
         else:
             # Store display names for later population if UI isn't ready yet
             self._pending_display_names = display_names
+
+    def _select_initial_file(self, display_names: List[str]) -> None:
+        """Select the last opened file when available, otherwise the first file."""
+        target_display_name = None
+        if self.last_file_path:
+            for display_name, file_path in self.display_name_to_path.items():
+                if file_path == self.last_file_path:
+                    target_display_name = display_name
+                    break
+
+        if not target_display_name:
+            target_display_name = display_names[0]
+
+        self.suppress_file_selection = True
+        self.file_selector.setCurrentText(target_display_name)
+        self.suppress_file_selection = False
+        self._on_file_selected(target_display_name)
     
     def _get_display_name(self, file_path: str) -> str:
         """Get display name for a file, using parent folder name for package.yml files."""
@@ -371,11 +401,17 @@ class EZpanso(QMainWindow):
     
     def _on_file_selected(self, display_name: str):
         """Step 3: Populate table for chosen file."""
+        if self.suppress_file_selection:
+            return
+
         # Find file path from display name
         self.active_file_path = self.display_name_to_path.get(display_name)
         
         if not self.active_file_path:
             return
+
+        self.settings.setValue("last_file_path", self.active_file_path)
+        self.last_file_path = self.active_file_path
         
         # Show package warning if this is a package.yml file
         if "(package)" in display_name.lower():
@@ -563,6 +599,7 @@ class EZpanso(QMainWindow):
         
         # Mark as modified and refresh
         self._mark_modified_and_refresh()
+        self._auto_save_if_enabled()
         return True
     
     def _get_selected_editable_rows(self):
@@ -657,6 +694,20 @@ class EZpanso(QMainWindow):
                     trigger_item.setData(Qt.ItemDataRole.UserRole, new_trigger_id)
                 if replace_item:
                     replace_item.setData(Qt.ItemDataRole.UserRole, new_trigger_id)
+
+            self._auto_save_if_enabled()
+
+    def _on_auto_save_toggled(self, checked: bool) -> None:
+        """Persist the auto-save setting and save pending changes when enabled."""
+        self.auto_save_enabled = checked
+        self.settings.setValue("auto_save", checked)
+        if checked:
+            self._auto_save_if_enabled()
+
+    def _auto_save_if_enabled(self) -> None:
+        """Persist pending changes without confirmation when auto-save is enabled."""
+        if self.auto_save_enabled and self.is_modified and self.modified_files:
+            self._save_all_files(show_message=False)
         
     def _check_duplicate_trigger(self, new_trigger: str, exclude_index: int = -1) -> bool:
         """Check if a trigger already exists in the current file."""
@@ -778,7 +829,7 @@ class EZpanso(QMainWindow):
             self._show_critical("Save Error", f"Error saving file:\n{e}")
             return False
 
-    def _save_all_files(self):
+    def _save_all_files(self, show_message: bool = True):
         """Save only the modified YAML files."""
         saved_count = 0
         failed_count = 0
@@ -802,11 +853,12 @@ class EZpanso(QMainWindow):
             # Refresh the current view to reflect latest state
             self._refresh_current_view()
             
-            # Show appropriate message
-            if failed_count == 0:
-                self._show_information("Files Saved", f"Successfully saved {saved_count} file(s).\nAll changes have been written to disk.")
-            else:
-                self._show_warning("Save Incomplete", f"Saved {saved_count} file(s), but {failed_count} file(s) failed to save.\nSee error messages for details.")
+            if show_message:
+                # Show appropriate message
+                if failed_count == 0:
+                    self._show_information("Files Saved", f"Successfully saved {saved_count} file(s).\nAll changes have been written to disk.")
+                else:
+                    self._show_warning("Save Incomplete", f"Saved {saved_count} file(s), but {failed_count} file(s) failed to save.\nSee error messages for details.")
     
     def _update_title(self):
         """Update window title with modification indicator."""
@@ -922,6 +974,7 @@ class EZpanso(QMainWindow):
         
         # Mark as modified and refresh
         self._mark_modified_and_refresh()
+        self._auto_save_if_enabled()
 
     def _save_state(self, description: str):
         """Save current state to undo stack for operation tracking."""
