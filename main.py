@@ -187,10 +187,10 @@ class EZpanso(QMainWindow):
         
         layout.addLayout(file_layout)
         
-        # Step 3: Table with trigger/replace columns
+        # Step 3: Table with trigger/replace/word columns
         self.table = QTableWidget()
-        self.table.setColumnCount(2)
-        self.table.setHorizontalHeaderLabels(["Trigger", "Replace"])
+        self.table.setColumnCount(3)
+        self.table.setHorizontalHeaderLabels(["Trigger", "Replace", "Word"])
         self.table.setSortingEnabled(True)
         
         # Enable context menu
@@ -206,6 +206,7 @@ class EZpanso(QMainWindow):
         if header:
             header.setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
             header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+            header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
             self.table.setColumnWidth(0, 144)
         
         # Step 5: Enable in-place editing
@@ -404,6 +405,20 @@ class EZpanso(QMainWindow):
         
         return item
 
+    def _create_word_item(self, trigger_id: str, is_word: bool, is_complex: bool = False) -> QTableWidgetItem:
+        """Create the word-trigger checkbox item for a table row."""
+        item = QTableWidgetItem("")
+        item.setData(Qt.ItemDataRole.UserRole, trigger_id)
+        item.setCheckState(Qt.CheckState.Checked if is_word else Qt.CheckState.Unchecked)
+        item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        if is_complex:
+            gray_brush = QBrush(QColor(180, 180, 180))
+            item.setBackground(gray_brush)
+            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsUserCheckable)
+
+        return item
+
     def _populate_table(self, matches: List[Dict[str, Any]]):
         """Populate table with matches, graying out complex ones."""
         # Only populate if table exists (UI has been set up)
@@ -434,9 +449,11 @@ class EZpanso(QMainWindow):
             # Create table items using helper method with trigger as unique ID
             trigger_item = self._create_table_item(display_trigger, trigger, is_complex)
             replace_item = self._create_table_item(display_replace, trigger, is_complex)
+            word_item = self._create_word_item(trigger, bool(match.get('word', False)), is_complex)
             
             self.table.setItem(i, 0, trigger_item)
             self.table.setItem(i, 1, replace_item)
+            self.table.setItem(i, 2, word_item)
         
         self.table.setSortingEnabled(True)  # Re-enable sorting
         self.table.blockSignals(False)
@@ -446,13 +463,27 @@ class EZpanso(QMainWindow):
         self._apply_filter()
     
     def _is_complex_match(self, match: Dict[str, Any]) -> bool:
-        """Step 4: Determine if match has more than trigger/replace."""
-        # Check for extra keys beyond trigger/replace
-        simple_keys = {'trigger', 'replace'}
+        """Determine if a match uses fields this simple editor should protect."""
+        # These metadata-only fields are preserved when editing/deleting a match.
+        simple_keys = {'trigger', 'replace', 'word', 'propagate_case'}
         extra_keys = set(match.keys()) - simple_keys
-        
-        # Consider complex if has extra keys or vars
-        return len(extra_keys) > 0 or 'vars' in match
+
+        if not extra_keys:
+            return False
+
+        return not (extra_keys == {'vars'} and self._has_only_date_vars(match))
+
+    def _has_only_date_vars(self, match: Dict[str, Any]) -> bool:
+        """Return True for simple date variable matches that are safe to preserve."""
+        vars_value = match.get('vars')
+        if not isinstance(vars_value, list) or not vars_value:
+            return False
+
+        for var in vars_value:
+            if not isinstance(var, dict) or var.get('type') != 'date':
+                return False
+
+        return True
     
     def _sort_easy_match(self, matches: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Sort matches: editable entries first, then alphabetical by trigger."""
@@ -611,15 +642,20 @@ class EZpanso(QMainWindow):
             
         # Get the unique trigger ID stored in the item
         trigger_id = item.data(Qt.ItemDataRole.UserRole)
+        if not isinstance(trigger_id, str) or not trigger_id:
+            trigger_item = self.table.item(item.row(), 0) if hasattr(self, 'table') else None
+            if trigger_item:
+                fallback_id = trigger_item.data(Qt.ItemDataRole.UserRole)
+                if isinstance(fallback_id, str) and fallback_id:
+                    trigger_id = fallback_id
+                else:
+                    trigger_id = trigger_item.text()
+
         if not trigger_id:
             print("Warning: No trigger ID found in table item")
             return
             
         col = item.column()
-        new_value = item.text()
-        
-        # Process escape sequences in the input
-        new_value = self._process_escape_sequences(new_value)
         
         # Find the corresponding match in files_data using the trigger ID
         target_match, target_index = self._find_match_by_trigger(trigger_id)
@@ -627,6 +663,15 @@ class EZpanso(QMainWindow):
         if target_match is None:
             print(f"Warning: Could not find match for trigger '{trigger_id}' in files_data")
             return
+
+        if col == 2:
+            self._update_word_field(item, target_match, trigger_id)
+            return
+
+        new_value = item.text()
+        
+        # Process escape sequences in the input
+        new_value = self._process_escape_sequences(new_value)
         
         # Get old value for comparison
         field_name = 'trigger' if col == 0 else 'replace'
@@ -657,13 +702,34 @@ class EZpanso(QMainWindow):
                     trigger_item.setData(Qt.ItemDataRole.UserRole, new_trigger_id)
                 if replace_item:
                     replace_item.setData(Qt.ItemDataRole.UserRole, new_trigger_id)
+                word_item = self.table.item(row, 2)
+                if word_item:
+                    word_item.setData(Qt.ItemDataRole.UserRole, new_trigger_id)
+
+    def _update_word_field(self, item: QTableWidgetItem, target_match: Dict[str, Any], trigger_id: str) -> None:
+        """Update the word-trigger flag from the table checkbox."""
+        new_word_value = item.checkState() == Qt.CheckState.Checked
+        old_word_value = bool(target_match.get('word', False))
+
+        if new_word_value == old_word_value:
+            return
+
+        trigger_display = self._get_display_value(trigger_id)
+        self._save_state(f"Edit word trigger: '{trigger_display}'")
+
+        if new_word_value:
+            target_match['word'] = True
+        else:
+            target_match.pop('word', None)
+
+        self._mark_modified_and_refresh(skip_table_refresh=True)
         
     def _check_duplicate_trigger(self, new_trigger: str, exclude_index: int = -1) -> bool:
         """Check if a trigger already exists in the current file."""
         if not self.active_file_path:
             return False
         
-        matches = self.files_data[self.active_file_path]
+        matches = self.files_data.get(self.active_file_path, [])
         for i, match in enumerate(matches):
             if i != exclude_index and match.get('trigger') == new_trigger:
                 return True
@@ -674,7 +740,7 @@ class EZpanso(QMainWindow):
         if not self.active_file_path:
             return None, -1
         
-        matches = self.files_data[self.active_file_path]
+        matches = self.files_data.get(self.active_file_path, [])
         for i, match in enumerate(matches):
             stored_trigger = str(match.get('trigger', ''))
             if stored_trigger == trigger:
@@ -858,6 +924,10 @@ class EZpanso(QMainWindow):
         replace_input.setStyleSheet(self.input_style)
         replace_layout.addWidget(replace_input)
         layout.addLayout(replace_layout)
+
+        word_checkbox = QCheckBox("Word trigger")
+        word_checkbox.setStyleSheet(CHECKBOX_STYLE)
+        layout.addWidget(word_checkbox)
         
         # Tip
         tip_label = QLabel("Tip: Type \\n for new lines, \\t for tabs")
@@ -918,6 +988,8 @@ class EZpanso(QMainWindow):
         
         # Add new snippet
         new_snippet = {'trigger': formatted_trigger, 'replace': formatted_replace}
+        if word_checkbox.isChecked():
+            new_snippet['word'] = True
         self.files_data[self.active_file_path].append(new_snippet)
         
         # Mark as modified and refresh
