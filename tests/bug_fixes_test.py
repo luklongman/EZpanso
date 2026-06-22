@@ -118,8 +118,7 @@ class TestTSMErrorFixes:
             ezpanso._mark_modified_and_refresh = MagicMock()
             
             # Mock dialog confirmation
-            from PyQt6.QtWidgets import QMessageBox
-            ezpanso._show_question = MagicMock(return_value=QMessageBox.StandardButton.Yes)
+            ezpanso._confirm_delete_matches = MagicMock(return_value=True)
             
             # Test deleting multiple triggers
             triggers_to_delete = [':test1', ':test3']

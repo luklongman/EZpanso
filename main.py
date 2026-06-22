@@ -18,7 +18,7 @@ from PyQt6.QtGui import QBrush, QColor, QKeySequence, QShortcut, QIcon, QDesktop
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QTableWidget, QTableWidgetItem,
     QVBoxLayout, QWidget, QPushButton, QHBoxLayout, QComboBox,
-    QMessageBox, QHeaderView, QLineEdit, QLabel, QDialog, QMenu,
+    QHeaderView, QLineEdit, QLabel, QDialog, QMenu,
     QFileDialog, QCheckBox
 )
 
@@ -28,7 +28,7 @@ from styles import (
     BUTTON_STYLE, PRIMARY_BUTTON_STYLE, INPUT_STYLE, LABEL_STYLE, 
     INFO_LABEL_STYLE, INFO_LABEL_MULTILINE_STYLE, ABOUT_LABEL_STYLE,
     WARNING_ICON_STYLE, WARNING_TEXT_BACKGROUND_STYLE, CHECKBOX_STYLE,
-    WARNING_BUTTON_STYLE, MESSAGE_BOX_STYLE, DISABLED_BUTTON_STYLE
+    WARNING_BUTTON_STYLE, DISABLED_BUTTON_STYLE
 )
 
 # Type aliases for better code clarity
@@ -535,10 +535,7 @@ class EZpanso(QMainWindow):
             else:
                 message = f"Delete {len(triggers_to_delete)} matches?\nThis action cannot be undone."
 
-            reply = self._show_question("Delete Matches", message,
-                                      QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-            
-            if reply != QMessageBox.StandardButton.Yes:
+            if not self._confirm_delete_matches(message):
                 return False
         
         # Save state before deletion
@@ -564,6 +561,100 @@ class EZpanso(QMainWindow):
         # Mark as modified and refresh
         self._mark_modified_and_refresh()
         return True
+
+    def _confirm_delete_matches(self, message: str) -> bool:
+        """Show a reliable delete confirmation dialog."""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Delete Matches")
+        dialog.setModal(True)
+        dialog.setFixedWidth(360)
+
+        if self.app_icon:
+            dialog.setWindowIcon(self.app_icon)
+
+        layout = QVBoxLayout(dialog)
+        layout.setSpacing(12)
+        layout.setContentsMargins(18, 18, 18, 18)
+
+        label = QLabel(message)
+        label.setWordWrap(True)
+        label.setStyleSheet(LABEL_STYLE)
+        layout.addWidget(label)
+
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+
+        cancel_btn = QPushButton("Cancel")
+        cancel_btn.setStyleSheet(self.button_style)
+        cancel_btn.clicked.connect(dialog.reject)
+        button_layout.addWidget(cancel_btn)
+
+        delete_btn = QPushButton("Delete")
+        delete_btn.setStyleSheet(WARNING_BUTTON_STYLE)
+        delete_btn.clicked.connect(dialog.accept)
+        delete_btn.setDefault(True)
+        button_layout.addWidget(delete_btn)
+
+        layout.addLayout(button_layout)
+
+        return dialog.exec() == QDialog.DialogCode.Accepted
+
+    def _confirm_save_changes(self, message: str) -> bool:
+        """Show a reliable save confirmation dialog."""
+        return self._show_custom_action_dialog(
+            title="Save Changes",
+            message=message,
+            actions=[("Cancel", "cancel", False), ("Save", "save", True)],
+        ) == "save"
+
+    def _confirm_unsaved_action(self, message: str) -> str:
+        """Return save, discard, or cancel for unsaved-change prompts."""
+        return self._show_custom_action_dialog(
+            title="Unsaved Changes",
+            message=message,
+            actions=[("Cancel", "cancel", False), ("Discard", "discard", False), ("Save", "save", True)],
+        )
+
+    def _show_custom_action_dialog(self, title: str, message: str, actions: List[tuple]) -> str:
+        """Show a custom action dialog and return the selected action value."""
+        dialog = QDialog(self)
+        dialog.setWindowTitle(title)
+        dialog.setModal(True)
+        dialog.setFixedWidth(380)
+        dialog.selected_action = "cancel"
+
+        if self.app_icon:
+            dialog.setWindowIcon(self.app_icon)
+
+        layout = QVBoxLayout(dialog)
+        layout.setSpacing(12)
+        layout.setContentsMargins(18, 18, 18, 18)
+
+        label = QLabel(message)
+        label.setWordWrap(True)
+        label.setStyleSheet(LABEL_STYLE)
+        layout.addWidget(label)
+
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+
+        for text, value, is_primary in actions:
+            button = QPushButton(text)
+            button.setStyleSheet(self.primary_button_style if is_primary else self.button_style)
+            button.clicked.connect(lambda checked=False, v=value: self._accept_action_dialog(dialog, v))
+            if is_primary:
+                button.setDefault(True)
+            button_layout.addWidget(button)
+
+        layout.addLayout(button_layout)
+
+        dialog.exec()
+        return dialog.selected_action
+
+    def _accept_action_dialog(self, dialog: QDialog, action: str) -> None:
+        """Store the selected action before closing a custom dialog."""
+        dialog.selected_action = action
+        dialog.accept()
     
     def _get_selected_editable_rows(self):
         """Get list of selected rows that contain editable (non-complex) matches."""
@@ -737,13 +828,8 @@ class EZpanso(QMainWindow):
             self.table.clearSelection()
         
         modified_count = len(self.modified_files)
-        reply = self._show_question(
-            "Save Changes", 
-            f"Save changes and overwrite {modified_count} modified file(s)?\nThis will update the YAML files on disk.",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
-        
-        if reply == QMessageBox.StandardButton.Yes:
+        message = f"Save changes and overwrite {modified_count} modified file(s)?\nThis will update the YAML files on disk."
+        if self._confirm_save_changes(message):
             self._save_all_files()
     
     def _save_single_file(self, file_path: str, matches: List[Dict[str, Any]]) -> bool:
@@ -1044,38 +1130,48 @@ class EZpanso(QMainWindow):
         state = self.redo_stack.pop()
         self._restore_state(state)
     
-    def _create_message_box(self, icon_type, title, text, buttons=QMessageBox.StandardButton.Ok):
-        """Create a message box with consistent styling and no icons."""
-        msg_box = QMessageBox(self)
-        msg_box.setIcon(QMessageBox.Icon.NoIcon)  # Remove icons from all dialogs
-        msg_box.setWindowTitle(title)
-        msg_box.setText(text)
-        msg_box.setStandardButtons(buttons)
-        
-        # Set the app icon (works best with PNG format)
-        if self.app_icon:
-            msg_box.setWindowIcon(self.app_icon)
-        
-        # Enhanced styling with consistent button appearance and transparent backgrounds
-        msg_box.setStyleSheet(MESSAGE_BOX_STYLE)
-        
-        return msg_box
-    
-    def _show_question(self, title, text, buttons=QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No):
-        """Show a question dialog."""
-        return self._create_message_box(QMessageBox.Icon.Question, title, text, buttons).exec()
-    
     def _show_warning(self, title, text):
         """Show a warning dialog."""
-        self._create_message_box(QMessageBox.Icon.Warning, title, text).exec()
+        self._show_ok_dialog(title, text)
     
     def _show_information(self, title, text):
         """Show an information dialog."""
-        self._create_message_box(QMessageBox.Icon.Information, title, text).exec()
+        self._show_ok_dialog(title, text)
     
     def _show_critical(self, title, text):
         """Show a critical dialog."""
-        self._create_message_box(QMessageBox.Icon.Critical, title, text).exec()
+        self._show_ok_dialog(title, text)
+
+    def _show_ok_dialog(self, title: str, message: str) -> None:
+        """Show a reliable single-action message dialog."""
+        dialog = QDialog(self)
+        dialog.setWindowTitle(title)
+        dialog.setModal(True)
+        dialog.setFixedWidth(380)
+
+        if self.app_icon:
+            dialog.setWindowIcon(self.app_icon)
+
+        layout = QVBoxLayout(dialog)
+        layout.setSpacing(12)
+        layout.setContentsMargins(18, 18, 18, 18)
+
+        label = QLabel(message)
+        label.setWordWrap(True)
+        label.setStyleSheet(LABEL_STYLE)
+        layout.addWidget(label)
+
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+
+        ok_btn = QPushButton("OK")
+        ok_btn.setStyleSheet(self.primary_button_style)
+        ok_btn.clicked.connect(dialog.accept)
+        ok_btn.setDefault(True)
+        button_layout.addWidget(ok_btn)
+
+        layout.addLayout(button_layout)
+        dialog.exec()
     
     def closeEvent(self, event):
         """Handle window close event - warn if there are unsaved changes."""
@@ -1084,16 +1180,12 @@ class EZpanso(QMainWindow):
             if hasattr(self, 'table'):
                 self.table.clearSelection()
                 
-            reply = self._show_question(
-                "Unsaved Changes",
-                "You have unsaved changes.\nDo you want to save before closing?",
-                QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel
-            )
-            
-            if reply == QMessageBox.StandardButton.Save:
+            action = self._confirm_unsaved_action("You have unsaved changes.\nDo you want to save before closing?")
+
+            if action == "save":
                 self._save_all_files()
                 event.accept()
-            elif reply == QMessageBox.StandardButton.Discard:
+            elif action == "discard":
                 event.accept()
             else:  # Cancel
                 event.ignore()
@@ -1341,16 +1433,12 @@ class EZpanso(QMainWindow):
             return True
         
         # Ask user what to do with unsaved changes
-        reply = self._show_question(
-            "Unsaved Changes",
-            "You have unsaved changes.\nSave before switching files?",
-            QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel
-        )
-        
-        if reply == QMessageBox.StandardButton.Save:
+        action = self._confirm_unsaved_action("You have unsaved changes.\nSave before switching files?")
+
+        if action == "save":
             self._save_all_files()
             return True
-        elif reply == QMessageBox.StandardButton.Discard:
+        elif action == "discard":
             # Reset modification state
             self.is_modified = False
             self.modified_files.clear()

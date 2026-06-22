@@ -94,6 +94,12 @@ INPUT_STYLE = f"""
         border-radius: 2px;
         font-size: 11px;
         background-color: {BACKGROUND_COLOR};
+        color: {TEXT_COLOR};
+        selection-background-color: {PRIMARY_COLOR};
+        selection-color: white;
+    }}
+    QLineEdit::placeholder {{
+        color: {MUTED_TEXT_COLOR};
     }}
     QLineEdit:focus {{
         border-color: {PRIMARY_COLOR};
