@@ -3,8 +3,8 @@ import sys
 import os
 from unittest.mock import Mock, patch, MagicMock, call, mock_open
 from typing import Dict, List, Any
-from PyQt6.QtWidgets import QApplication
-from PyQt6.QtCore import QSettings
+from PyQt6.QtWidgets import QApplication, QTableWidgetItem
+from PyQt6.QtCore import QSettings, Qt
 from PyQt6.QtGui import QIcon
 
 # Add the missing imports that main.py needs
@@ -68,7 +68,7 @@ class TestEZpansoInit:
             window = EZpanso()
             
             # Test window properties
-            assert window.windowTitle() == "EZpanso"
+            assert window.windowTitle() == "EZpanso v1.2.1"
             assert window.size().width() == 600
             assert window.size().height() == 800
             
@@ -258,7 +258,7 @@ class TestEZpansoInit:
             window = EZpanso()
             
             # Test window title
-            assert window.windowTitle() == "EZpanso"
+            assert window.windowTitle() == "EZpanso v1.2.1"
             
             # Test window size
             size = window.size()
@@ -415,13 +415,37 @@ class TestEZpansoDataHandling:
             
             window = EZpanso()
             
-            # Complex match with extra keys
-            complex_match = {'trigger': ':test', 'replace': 'value', 'word': True}
+            # Safe metadata keys should remain editable.
+            word_match = {'trigger': ':test', 'replace': 'value', 'word': True}
+            assert not window._is_complex_match(word_match)
+
+            propagate_case_match = {'trigger': ':caps', 'replace': 'value', 'propagate_case': False}
+            assert not window._is_complex_match(propagate_case_match)
+
+            # Unknown extra keys should still be protected.
+            complex_match = {'trigger': ':test', 'replace': 'value', 'form': 'Name: [[name]]'}
             assert window._is_complex_match(complex_match)
             
             # Complex match with vars
             vars_match = {'trigger': ':test', 'replace': 'value', 'vars': []}
             assert window._is_complex_match(vars_match)
+
+            # Simple date vars should be editable because the vars block is preserved.
+            date_match = {
+                'trigger': 'ddate',
+                'replace': '{{date}}',
+                'word': True,
+                'vars': [{'name': 'date', 'type': 'date', 'params': {'format': '%Y-%m-%d'}}]
+            }
+            assert not window._is_complex_match(date_match)
+
+            # Non-date vars should remain protected.
+            shell_match = {
+                'trigger': ':shell',
+                'replace': '{{output}}',
+                'vars': [{'name': 'output', 'type': 'shell', 'params': {'cmd': 'date'}}]
+            }
+            assert window._is_complex_match(shell_match)
     
     def test_sort_matches(self, qapp, mock_settings, mock_os_path):
         """Test sorting matches with simple ones first."""
@@ -432,19 +456,19 @@ class TestEZpansoDataHandling:
             window = EZpanso()
             
             matches = [
-                {'trigger': 'z_complex', 'replace': 'value', 'word': True},
+                {'trigger': 'z_word_safe', 'replace': 'value', 'word': True},
                 {'trigger': 'a_simple', 'replace': 'value'},
                 {'trigger': 'b_simple', 'replace': 'value'},
                 {'trigger': 'a_complex', 'replace': 'value', 'vars': []}
             ]
             
-            sorted_matches = window._sort_matches(matches)
+            sorted_matches = window._sort_easy_match(matches)
             
             # Simple matches should come first, then alphabetical
             assert sorted_matches[0]['trigger'] == 'a_simple'
             assert sorted_matches[1]['trigger'] == 'b_simple'
-            assert sorted_matches[2]['trigger'] == 'a_complex'
-            assert sorted_matches[3]['trigger'] == 'z_complex'
+            assert sorted_matches[2]['trigger'] == 'z_word_safe'
+            assert sorted_matches[3]['trigger'] == 'a_complex'
     
     def test_get_display_name_regular_file(self, qapp, mock_settings, mock_os_path):
         """Test getting display name for regular files."""
@@ -604,7 +628,7 @@ class TestEZpansoTableOperations:
             window.table.blockSignals.assert_called()
             window.table.setSortingEnabled.assert_called()
             window.table.setRowCount.assert_called_with(2)
-            assert window.table.setItem.call_count == 4  # 2 rows * 2 columns
+            assert window.table.setItem.call_count == 6  # 2 rows * 3 columns
     
     def test_on_file_selected_valid_file(self, qapp, mock_settings, mock_os_path):
         """Test selecting a valid file."""
@@ -668,7 +692,7 @@ class TestEZpansoTableOperations:
             mock_item.return_value = mock_item_instance
             
             window = EZpanso()
-            result = window._create_table_item("test text", False)
+            result = window._create_table_item("test text", ":test", False)
             
             mock_item.assert_called_once_with("test text")
             mock_item_instance.setBackground.assert_not_called()
@@ -683,12 +707,33 @@ class TestEZpansoTableOperations:
             window = EZpanso()
             
             # Test the actual implementation rather than mocking everything
-            result = window._create_table_item("test text", True)
+            result = window._create_table_item("test text", ":test", True)
             
             # Verify it's a QTableWidgetItem
             assert result.text() == "test text"
             # Complex items should not be editable (flags should be modified)
             # We can't easily test the exact flag value due to bitwise operations
+
+    def test_update_word_field(self, qapp, mock_settings, mock_os_path):
+        """Test updating the word checkbox modifies match metadata."""
+        with patch.object(EZpanso, '_setup_ui'), \
+             patch.object(EZpanso, '_setup_menubar'), \
+             patch.object(EZpanso, '_load_all_yaml_files'):
+
+            window = EZpanso()
+            window.active_file_path = '/test/file.yml'
+            window.files_data = {'/test/file.yml': [{'trigger': ':test', 'replace': 'value'}]}
+            window.modified_files = set()
+            window.is_modified = False
+
+            item = QTableWidgetItem("")
+            item.setCheckState(Qt.CheckState.Checked)
+
+            window._update_word_field(item, window.files_data['/test/file.yml'][0], ':test')
+
+            assert window.files_data['/test/file.yml'][0]['word'] is True
+            assert window.is_modified is True
+            assert '/test/file.yml' in window.modified_files
 
 
 class TestEZpansoUtilityMethods:
@@ -705,7 +750,7 @@ class TestEZpansoUtilityMethods:
             
             window._update_title()
             
-            assert window.windowTitle() == "EZpanso"
+            assert window.windowTitle() == "EZpanso v1.2.1"
     
     def test_update_title_with_modification(self, qapp, mock_settings, mock_os_path):
         """Test updating title with modifications."""
@@ -718,7 +763,7 @@ class TestEZpansoUtilityMethods:
             
             window._update_title()
             
-            assert window.windowTitle() == "EZpanso *"
+            assert window.windowTitle() == "EZpanso v1.2.1 *"
     
     def test_check_duplicate_trigger_found(self, qapp, mock_settings, mock_os_path):
         """Test checking for duplicate triggers when one exists."""
