@@ -68,7 +68,7 @@ class TestEZpansoInit:
             window = EZpanso()
             
             # Test window properties
-            assert window.windowTitle() == "EZpanso"
+            assert window.windowTitle() == "EZpanso v1.2.1"
             assert window.size().width() == 600
             assert window.size().height() == 800
             
@@ -121,7 +121,11 @@ class TestEZpansoInit:
              patch.object(EZpanso, '_load_all_yaml_files'):
             
             mock_settings_instance = Mock()
-            mock_settings_instance.value.return_value = "/custom/espanso/dir"
+            mock_settings_instance.value.side_effect = lambda key, default=None, **kwargs: {
+                "espanso_dir": "/custom/espanso/dir",
+                "auto_save": False,
+                "last_file_path": "/custom/espanso/dir/typeit4me.yml",
+            }.get(key, default)
             mock_qsettings.return_value = mock_settings_instance
             
             window = EZpanso()
@@ -130,9 +134,12 @@ class TestEZpansoInit:
             mock_qsettings.assert_called_once_with("EZpanso", "EZpanso")
             assert window.settings == mock_settings_instance
             
-            # Test custom directory was loaded
-            mock_settings_instance.value.assert_called_once_with("espanso_dir", "")
+            # Test custom directory and persisted UI settings were loaded
+            mock_settings_instance.value.assert_any_call("espanso_dir", "")
+            mock_settings_instance.value.assert_any_call("auto_save", False, type=bool)
+            mock_settings_instance.value.assert_any_call("last_file_path", "")
             assert window.custom_espanso_dir == "/custom/espanso/dir"
+            assert window.last_file_path == "/custom/espanso/dir/typeit4me.yml"
     
     def test_data_structures_initialization(self, qapp, mock_settings, mock_os_path):
         """Test that all data structures are properly initialized."""
@@ -258,7 +265,7 @@ class TestEZpansoInit:
             window = EZpanso()
             
             # Test window title
-            assert window.windowTitle() == "EZpanso"
+            assert window.windowTitle() == "EZpanso v1.2.1"
             
             # Test window size
             size = window.size()
@@ -438,7 +445,7 @@ class TestEZpansoDataHandling:
                 {'trigger': 'a_complex', 'replace': 'value', 'vars': []}
             ]
             
-            sorted_matches = window._sort_matches(matches)
+            sorted_matches = window._sort_easy_match(matches)
             
             # Simple matches should come first, then alphabetical
             assert sorted_matches[0]['trigger'] == 'a_simple'
@@ -621,6 +628,7 @@ class TestEZpansoTableOperations:
             window._on_file_selected('test.yml')
             
             assert window.active_file_path == '/path/test.yml'
+            mock_settings.setValue.assert_called_once_with("last_file_path", "/path/test.yml")
             window.filter_box.clear.assert_called_once()
             mock_populate.assert_called_once()
     
@@ -637,7 +645,62 @@ class TestEZpansoTableOperations:
             window._on_file_selected('nonexistent.yml')
             
             assert window.active_file_path is None
+            mock_settings.setValue.assert_not_called()
             mock_populate.assert_not_called()
+
+    def test_select_initial_file_restores_last_file(self, qapp, mock_settings, mock_os_path):
+        """Test startup selection restores the last selected file when present."""
+        with patch.object(EZpanso, '_setup_ui'), \
+             patch.object(EZpanso, '_setup_menubar'), \
+             patch.object(EZpanso, '_load_all_yaml_files'), \
+             patch.object(EZpanso, '_populate_table') as mock_populate:
+
+            window = EZpanso()
+            window.last_file_path = '/path/typeit4me.yml'
+            window.display_name_to_path = {
+                'base.yml': '/path/base.yml',
+                'typeit4me.yml': '/path/typeit4me.yml',
+            }
+            window.files_data = {
+                '/path/base.yml': [],
+                '/path/typeit4me.yml': [{'trigger': ':test', 'replace': 'value'}],
+            }
+            window.file_selector = Mock()
+            window.filter_box = Mock()
+
+            window._select_initial_file(['base.yml', 'typeit4me.yml'])
+
+            window.file_selector.setCurrentText.assert_called_once_with('typeit4me.yml')
+            assert window.active_file_path == '/path/typeit4me.yml'
+            mock_settings.setValue.assert_called_once_with("last_file_path", "/path/typeit4me.yml")
+            mock_populate.assert_called_once()
+
+    def test_select_initial_file_falls_back_when_last_file_missing(self, qapp, mock_settings, mock_os_path):
+        """Test startup selection falls back when the saved file path is unavailable."""
+        with patch.object(EZpanso, '_setup_ui'), \
+             patch.object(EZpanso, '_setup_menubar'), \
+             patch.object(EZpanso, '_load_all_yaml_files'), \
+             patch.object(EZpanso, '_populate_table') as mock_populate:
+
+            window = EZpanso()
+            window.last_file_path = '/missing/typeit4me.yml'
+            window.display_name_to_path = {
+                'base.yml': '/path/base.yml',
+                'typeit4me.yml': '/path/typeit4me.yml',
+            }
+            window.files_data = {
+                '/path/base.yml': [{'trigger': ':base', 'replace': 'value'}],
+                '/path/typeit4me.yml': [],
+            }
+            window.file_selector = Mock()
+            window.filter_box = Mock()
+
+            window._select_initial_file(['base.yml', 'typeit4me.yml'])
+
+            window.file_selector.setCurrentText.assert_called_once_with('base.yml')
+            assert window.active_file_path == '/path/base.yml'
+            mock_settings.setValue.assert_called_once_with("last_file_path", "/path/base.yml")
+            mock_populate.assert_called_once()
     
     def test_on_file_selected_package_file(self, qapp, mock_settings, mock_os_path):
         """Test selecting a package file shows warning."""
@@ -705,7 +768,7 @@ class TestEZpansoUtilityMethods:
             
             window._update_title()
             
-            assert window.windowTitle() == "EZpanso"
+            assert window.windowTitle() == "EZpanso v1.2.1"
     
     def test_update_title_with_modification(self, qapp, mock_settings, mock_os_path):
         """Test updating title with modifications."""
@@ -718,7 +781,7 @@ class TestEZpansoUtilityMethods:
             
             window._update_title()
             
-            assert window.windowTitle() == "EZpanso *"
+            assert window.windowTitle() == "EZpanso v1.2.1 *"
     
     def test_check_duplicate_trigger_found(self, qapp, mock_settings, mock_os_path):
         """Test checking for duplicate triggers when one exists."""
@@ -790,6 +853,71 @@ class TestEZpansoUtilityMethods:
             
             assert match is None
             assert index == -1
+
+    def test_auto_save_if_enabled_saves_silently(self, qapp, mock_settings, mock_os_path):
+        """Test auto-save writes pending changes without message dialogs."""
+        with patch.object(EZpanso, '_setup_ui'), \
+             patch.object(EZpanso, '_setup_menubar'), \
+             patch.object(EZpanso, '_load_all_yaml_files'):
+
+            window = EZpanso()
+            window.auto_save_enabled = True
+            window.is_modified = True
+            window.modified_files = {'/test/file.yml'}
+            window._save_all_files = Mock()
+
+            window._auto_save_if_enabled()
+
+            window._save_all_files.assert_called_once_with(show_message=False)
+
+    def test_auto_save_if_disabled_does_not_save(self, qapp, mock_settings, mock_os_path):
+        """Test auto-save leaves pending changes untouched when disabled."""
+        with patch.object(EZpanso, '_setup_ui'), \
+             patch.object(EZpanso, '_setup_menubar'), \
+             patch.object(EZpanso, '_load_all_yaml_files'):
+
+            window = EZpanso()
+            window.auto_save_enabled = False
+            window.is_modified = True
+            window.modified_files = {'/test/file.yml'}
+            window._save_all_files = Mock()
+
+            window._auto_save_if_enabled()
+
+            window._save_all_files.assert_not_called()
+
+    def test_auto_save_toggle_persists_setting(self, qapp, mock_settings, mock_os_path):
+        """Test toggling auto-save persists the setting."""
+        with patch.object(EZpanso, '_setup_ui'), \
+             patch.object(EZpanso, '_setup_menubar'), \
+             patch.object(EZpanso, '_load_all_yaml_files'):
+
+            window = EZpanso()
+            window._auto_save_if_enabled = Mock()
+
+            window._on_auto_save_toggled(True)
+
+            assert window.auto_save_enabled is True
+            window.settings.setValue.assert_called_with("auto_save", True)
+            window._auto_save_if_enabled.assert_called_once()
+
+    def test_silent_save_suppresses_success_dialog(self, qapp, mock_settings, mock_os_path):
+        """Test silent saves do not show the post-save information dialog."""
+        with patch.object(EZpanso, '_setup_ui'), \
+             patch.object(EZpanso, '_setup_menubar'), \
+             patch.object(EZpanso, '_load_all_yaml_files'):
+
+            window = EZpanso()
+            window.modified_files = {'/test/file.yml'}
+            window.files_data = {'/test/file.yml': [{'trigger': ':test', 'replace': 'value'}]}
+            window._save_single_file = Mock(return_value=True)
+            window._refresh_current_view = Mock()
+            window._show_information = Mock()
+
+            window._save_all_files(show_message=False)
+
+            window._show_information.assert_not_called()
+            assert window.is_modified is False
 
 
 if __name__ == "__main__":
